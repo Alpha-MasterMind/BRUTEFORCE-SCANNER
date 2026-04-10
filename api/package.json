@@ -4,9 +4,12 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "next": "14.2.21",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "node-fetch": "^2.6.7"
   },
   "engines": {
-    "node": "24.x"
+    "node": "20.x"
   }
 }
