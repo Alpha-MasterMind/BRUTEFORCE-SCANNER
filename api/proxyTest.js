@@ -26,7 +26,6 @@ export default async function handler(req, res) {
     const result = { port, proxy: proxyUrl, success: false, error: null, data: null, status: null };
 
     try {
-      // Use HTTPS proxy agent for all ports (SOCKS would need separate agent)
       const agent = new HttpsProxyAgent(proxyUrl);
 
       const controller = new AbortController();
@@ -48,7 +47,6 @@ export default async function handler(req, res) {
       }
 
       result.status = response.status;
-      // Consider success if we got any HTTP response (even non-200 means proxy is reachable)
       result.success = true;
     } catch (err) {
       result.error = err.message;
