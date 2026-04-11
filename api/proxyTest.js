@@ -2,47 +2,60 @@
 import fetch from 'node-fetch';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 
+const COMMON_PROXY_PORTS = [3128, 8888, 9090, 1080, 8118];
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { proxyHost, proxyPort, targetUrl = 'https://httpbin.org/ip' } = req.body;
+  const {
+    proxyHost,
+    ports = COMMON_PROXY_PORTS,
+    targetUrl = 'https://httpbin.org/ip'
+  } = req.body;
 
-  if (!proxyHost || !proxyPort) {
-    return res.status(400).json({ error: 'Missing proxyHost or proxyPort' });
+  if (!proxyHost) {
+    return res.status(400).json({ error: 'Missing proxyHost' });
   }
 
-  const proxyUrl = `http://${proxyHost}:${proxyPort}`;
-  const agent = new HttpsProxyAgent(proxyUrl);
+  const results = [];
 
-  try {
-    const response = await fetch(targetUrl, {
-      agent,
-      timeout: 10000,
-      headers: { 'User-Agent': 'Mozilla/5.0' }
-    });
+  for (const port of ports) {
+    const proxyUrl = `http://${proxyHost}:${port}`;
+    const result = { port, proxy: proxyUrl, success: false, error: null, data: null, status: null };
 
-    const text = await response.text();
-    let data;
     try {
-      data = JSON.parse(text);
-    } catch {
-      data = { raw: text };
+      // Use HTTPS proxy agent for all ports (SOCKS would need separate agent)
+      const agent = new HttpsProxyAgent(proxyUrl);
+
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+
+      const response = await fetch(targetUrl, {
+        agent,
+        signal: controller.signal,
+        headers: { 'User-Agent': 'Mozilla/5.0' }
+      });
+
+      clearTimeout(timer);
+
+      const text = await response.text();
+      try {
+        result.data = JSON.parse(text);
+      } catch {
+        result.data = { raw: text.substring(0, 200) };
+      }
+
+      result.status = response.status;
+      // Consider success if we got any HTTP response (even non-200 means proxy is reachable)
+      result.success = true;
+    } catch (err) {
+      result.error = err.message;
     }
 
-    res.status(200).json({
-      success: true,
-      proxy: proxyUrl,
-      target: targetUrl,
-      status: response.status,
-      data
-    });
-  } catch (err) {
-    res.status(200).json({
-      success: false,
-      proxy: proxyUrl,
-      error: err.message
-    });
+    results.push(result);
   }
+
+  res.status(200).json({ host: proxyHost, results });
 }
