@@ -1,5 +1,5 @@
 // pages/index.jsx
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 
 const MOYA_DOMAINS = [
   "moya.app", "faqs.moya.app", "api.moya.app", "chat.moya.app",
@@ -86,6 +86,7 @@ const PORT_RISK = {
   3128: 8, 8888: 8, 9090: 7, 1080: 7, 8118: 7,
   8000: 6, 8001: 6, 9000: 6,
 };
+
 const PORT_LABELS = {
   3128: "SQUID", 8888: "PROXY", 9090: "PROXY",
   1080: "SOCKS", 8118: "PRIVOXY", 8080: "HTTP-ALT",
@@ -302,10 +303,13 @@ export default function Scanner() {
   const [reconFilter, setReconFilter] = useState("");
   const [showHighlights, setShowHighlights] = useState(false);
 
-  // Shared
-  const [history, setHistory] = useState([]);
+  // Proxy test state
+  const [proxyHost, setProxyHost] = useState("");
+  const [proxyPort, setProxyPort] = useState("3128");
+  const [proxyTarget, setProxyTarget] = useState("https://httpbin.org/ip");
+  const [proxyResult, setProxyResult] = useState(null);
+  const [proxyLoading, setProxyLoading] = useState(false);
 
-  // Subdomain list used by recon (must match backend)
   const SUBDOMAINS = ['www', 'mail', 'api', 'vpn', 'admin', 'portal'];
 
   // ─── SNI Scan ──────────────────────────────────────────
@@ -362,7 +366,7 @@ export default function Scanner() {
     setReconProgress(5);
 
     const allResults = [];
-    const concurrency = 3; // Process 3 domains at a time
+    const concurrency = 3;
     const chunks = [];
     for (let i = 0; i < domains.length; i += concurrency) {
       chunks.push(domains.slice(i, i + concurrency));
@@ -381,7 +385,6 @@ export default function Scanner() {
             if (data.results) {
               allResults.push(...data.results);
             }
-            // Update UI progressively
             setReconResults([...allResults]);
           } catch (err) {
             console.error(`Failed to scan ${domain}:`, err);
@@ -389,7 +392,6 @@ export default function Scanner() {
         });
         await Promise.all(promises);
         
-        // Update progress (rough estimate)
         const pct = Math.min(95, 5 + (allResults.length / (domains.length * (SUBDOMAINS.length + 1))) * 90);
         setReconProgress(pct);
       }
@@ -399,6 +401,29 @@ export default function Scanner() {
     } catch (e) {
       setReconError(e.message);
       setReconStatus("error");
+    }
+  }
+
+  // ─── Proxy Test ─────────────────────────────────────────────────────
+  async function testProxy() {
+    if (!proxyHost || !proxyPort) {
+      setProxyResult({ success: false, error: "Host and port required" });
+      return;
+    }
+    setProxyLoading(true);
+    setProxyResult(null);
+    try {
+      const res = await fetch('/api/proxyTest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ proxyHost, proxyPort, targetUrl: proxyTarget })
+      });
+      const data = await res.json();
+      setProxyResult(data);
+    } catch (err) {
+      setProxyResult({ success: false, error: err.message });
+    } finally {
+      setProxyLoading(false);
     }
   }
 
@@ -448,7 +473,7 @@ export default function Scanner() {
           )}
         </div>
         <div className="flex gap-1">
-          {[["sni","📡 SNI"],["recon","🔍 Recon"],["history","📜 Log"]].map(([t, l]) => (
+          {[["sni","📡 SNI"],["recon","🔍 Recon"],["proxy","🧪 Proxy"],["history","📜 Log"]].map(([t, l]) => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-4 py-1.5 rounded-lg text-xs tracking-wider transition ${tab === t ? "bg-white/10 text-white border border-white/20" : "text-white/25 hover:text-white"}`}>
               {l}
@@ -664,6 +689,68 @@ export default function Scanner() {
           </>
         )}
 
+        {/* Proxy Test Tab */}
+        {tab === "proxy" && (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-white/4 border border-white/10 rounded-2xl p-5 space-y-4">
+              <div className="text-[10px] text-white/25 uppercase tracking-widest">Proxy Tester</div>
+              <div>
+                <label className="text-[10px] text-white/20 uppercase block mb-1">Proxy Host</label>
+                <input value={proxyHost} onChange={e => setProxyHost(e.target.value)}
+                  placeholder="e.g., api.vodacom.co.za"
+                  className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-cyan-500/40" />
+              </div>
+              <div>
+                <label className="text-[10px] text-white/20 uppercase block mb-1">Proxy Port</label>
+                <input value={proxyPort} onChange={e => setProxyPort(e.target.value)}
+                  placeholder="3128"
+                  className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-cyan-500/40" />
+              </div>
+              <div>
+                <label className="text-[10px] text-white/20 uppercase block mb-1">Target URL</label>
+                <input value={proxyTarget} onChange={e => setProxyTarget(e.target.value)}
+                  className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-cyan-500/40" />
+              </div>
+              <button onClick={testProxy} disabled={proxyLoading}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 text-white font-black tracking-widest text-sm hover:opacity-90 transition disabled:opacity-30">
+                {proxyLoading ? "TESTING..." : "▶ TEST PROXY"}
+              </button>
+              {proxyResult && (
+                <div className={`p-4 rounded-xl border ${proxyResult.success ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+                  <div className="text-xs font-mono">
+                    <span className="text-white/50">Proxy:</span> {proxyResult.proxy}
+                  </div>
+                  {proxyResult.success ? (
+                    <>
+                      <div className="text-xs font-mono mt-2">
+                        <span className="text-white/50">Status:</span> {proxyResult.status}
+                      </div>
+                      <div className="text-xs font-mono mt-2 break-all">
+                        <span className="text-white/50">Response:</span>
+                        <pre className="text-green-300 text-[10px] mt-1 overflow-x-auto">{JSON.stringify(proxyResult.data, null, 2)}</pre>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-xs font-mono mt-2 text-red-300">
+                      Error: {proxyResult.error}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="bg-white/4 border border-white/10 rounded-2xl p-5 space-y-3">
+              <div className="text-[10px] text-white/25 uppercase tracking-widest">How to Use</div>
+              <ol className="text-xs text-white/40 space-y-2 list-decimal list-inside">
+                <li>Enter the proxy host and port (e.g., from Recon results).</li>
+                <li>Target URL defaults to httpbin.org/ip to show your external IP.</li>
+                <li>Click "Test Proxy".</li>
+                <li>If successful, the response will show the IP address of the proxy server.</li>
+                <li className="text-yellow-400/60">⚠️ Only test on authorized networks.</li>
+              </ol>
+            </div>
+          </div>
+        )}
+
         {/* History Tab (placeholder) */}
         {tab === "history" && (
           <div className="bg-white/4 border border-white/10 rounded-2xl overflow-hidden">
@@ -674,4 +761,4 @@ export default function Scanner() {
       </div>
     </div>
   );
-                       }
+      }
