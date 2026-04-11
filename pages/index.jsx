@@ -1,3 +1,4 @@
+// pages/index.jsx
 import { useState, useEffect, useRef } from "react";
 
 const MOYA_DOMAINS = [
@@ -96,6 +97,8 @@ const FLAGS = {
   "Netherlands": "🇳🇱", "France": "🇫🇷", "United Kingdom": "🇬🇧",
   "Russia": "🇷🇺", "China": "🇨🇳", "Singapore": "🇸🇬",
 };
+
+// ─── Subcomponents ───────────────────────────────────────────────────
 
 function RiskBadge({ port }) {
   const risk = PORT_RISK[port] || 2;
@@ -270,9 +273,12 @@ function SNIRow({ r, idx }) {
   );
 }
 
+// ─── Main Component ─────────────────────────────────────────────────
+
 export default function Scanner() {
   const [tab, setTab] = useState("sni");
 
+  // SNI state
   const [sniPreset, setSniPreset] = useState("🇿🇦 All SA Domains");
   const [sniCustomText, setSniCustomText] = useState("");
   const [sniTargetIP, setSniTargetIP] = useState("");
@@ -286,6 +292,7 @@ export default function Scanner() {
   const [sniError, setSniError] = useState("");
   const [sniFilter, setSniFilter] = useState("");
 
+  // Recon state
   const [reconDomains, setReconDomains] = useState("accenture.com\nmtn.co.za\nvodacom.co.za");
   const [reconProfile, setReconProfile] = useState("all");
   const [reconStatus, setReconStatus] = useState("idle");
@@ -295,8 +302,13 @@ export default function Scanner() {
   const [reconFilter, setReconFilter] = useState("");
   const [showHighlights, setShowHighlights] = useState(false);
 
+  // Shared
   const [history, setHistory] = useState([]);
 
+  // Subdomain list used by recon (must match backend)
+  const SUBDOMAINS = ['www', 'mail', 'api', 'vpn', 'admin', 'portal'];
+
+  // ─── SNI Scan ──────────────────────────────────────────
   async function launchSNI() {
     setSniError(""); setSniResults([]); setSniTested(0);
 
@@ -334,39 +346,63 @@ export default function Scanner() {
     }
   }
 
+  // ─── Recon Scan (Chunked) ──────────────────────────────────────────
   async function launchRecon() {
-    setReconError(""); setReconResults([]); setReconProgress(0);
+    setReconError(""); 
+    setReconResults([]); 
+    setReconProgress(0);
 
     const domains = reconDomains.split("\n").map(s => s.trim()).filter(Boolean);
-    if (!domains.length) { setReconError("Enter at least one domain."); return; }
+    if (!domains.length) { 
+      setReconError("Enter at least one domain."); 
+      return; 
+    }
 
     setReconStatus("running");
-    setReconProgress(20);
+    setReconProgress(5);
+
+    const allResults = [];
+    const concurrency = 3; // Process 3 domains at a time
+    const chunks = [];
+    for (let i = 0; i < domains.length; i += concurrency) {
+      chunks.push(domains.slice(i, i + concurrency));
+    }
 
     try {
-      const response = await fetch('/api/reconScan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          domains: domains,
-          profile: reconProfile
-        })
-      });
-      const data = await response.json();
-      if (data.error) {
-        setReconError(data.error);
-        setReconStatus("error");
-      } else {
-        setReconResults(data.results);
-        setReconStatus("done");
-        setReconProgress(100);
+      for (const chunk of chunks) {
+        const promises = chunk.map(async (domain) => {
+          try {
+            const response = await fetch('/api/reconSingle', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ domain, profile: reconProfile })
+            });
+            const data = await response.json();
+            if (data.results) {
+              allResults.push(...data.results);
+            }
+            // Update UI progressively
+            setReconResults([...allResults]);
+          } catch (err) {
+            console.error(`Failed to scan ${domain}:`, err);
+          }
+        });
+        await Promise.all(promises);
+        
+        // Update progress (rough estimate)
+        const pct = Math.min(95, 5 + (allResults.length / (domains.length * (SUBDOMAINS.length + 1))) * 90);
+        setReconProgress(pct);
       }
+      
+      setReconStatus("done");
+      setReconProgress(100);
     } catch (e) {
       setReconError(e.message);
       setReconStatus("error");
     }
   }
 
+  // ─── Export CSV ──────────────────────────────────────────
   function exportCSV(data, name) {
     const isSNI = data[0]?.sni;
     const headers = isSNI
@@ -382,6 +418,7 @@ export default function Scanner() {
     a.download = `${name}_${Date.now()}.csv`; a.click();
   }
 
+  // ─── Filtered Data ──────────────────────────────────────────
   const sniDisplayed = sniResults.filter(r => !sniFilter || r.sni.includes(sniFilter) || (r.geo?.country || "").toLowerCase().includes(sniFilter.toLowerCase()));
   const reconLive = reconResults.filter(r => r.ips?.length);
   const reconDisplayed = reconLive.filter(r => {
@@ -393,6 +430,7 @@ export default function Scanner() {
 
   const scanning = sniStatus === "running" || reconStatus === "running";
 
+  // ─── Render ─────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#060610] text-white font-mono text-sm">
       <div className="border-b border-white/10 bg-black/70 backdrop-blur sticky top-0 z-50 px-5 py-3 flex items-center justify-between">
@@ -422,6 +460,8 @@ export default function Scanner() {
       {scanning && <ProgressBar pct={tab === "sni" ? (sniResults.length / Math.max(1, sniTotal) * 100) : reconProgress} color={tab === "sni" ? "green" : "cyan"} />}
 
       <div className="max-w-screen-xl mx-auto px-5 py-5 space-y-4">
+
+        {/* SNI Tab */}
         {tab === "sni" && (
           <>
             <div className="grid grid-cols-3 gap-4">
@@ -548,6 +588,7 @@ export default function Scanner() {
           </>
         )}
 
+        {/* Recon Tab */}
         {tab === "recon" && (
           <>
             <div className="grid grid-cols-3 gap-4">
@@ -613,9 +654,17 @@ export default function Scanner() {
                 </div>
               </div>
             )}
+            {reconStatus === "idle" && reconLive.length === 0 && (
+              <div className="text-center py-20 space-y-3">
+                <div className="text-5xl">🔍</div>
+                <div className="text-white/30 text-sm tracking-wider">ENTER DOMAINS AND LAUNCH RECON</div>
+                <div className="text-white/15 text-xs">Subdomain enum + port scan + proxy detection</div>
+              </div>
+            )}
           </>
         )}
 
+        {/* History Tab (placeholder) */}
         {tab === "history" && (
           <div className="bg-white/4 border border-white/10 rounded-2xl overflow-hidden">
             <div className="px-4 py-3 border-b border-white/10 text-[10px] text-white/25 uppercase tracking-widest">Scan Log</div>
@@ -625,4 +674,4 @@ export default function Scanner() {
       </div>
     </div>
   );
-    }
+                       }
