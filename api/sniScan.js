@@ -1,5 +1,3 @@
-
-// api/sniScan.js
 import tls from 'tls';
 import dns from 'dns/promises';
 import fetch from 'node-fetch';
@@ -51,11 +49,7 @@ async function httpProbe(host, port = 443) {
       headers: { 'User-Agent': 'Mozilla/5.0' }
     });
     const server = res.headers.get('server') || null;
-    return {
-      status: res.status,
-      server,
-      title: null
-    };
+    return { status: res.status, server, title: null };
   } catch (err) {
     return { status: null, server: null, title: null, error: err.message };
   }
@@ -82,13 +76,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const {
-    sni_hosts,
-    target_ip,
-    port = 443,
-    probe_http = true,
-    probe_geo = true
-  } = req.body;
+  const { sni_hosts, target_ip, port = 443, probe_http = true, probe_geo = true } = req.body;
 
   if (!sni_hosts || !Array.isArray(sni_hosts)) {
     return res.status(400).json({ error: 'Missing sni_hosts array' });
@@ -115,19 +103,12 @@ export default async function handler(req, res) {
     };
 
     if (handshake.ok) {
-      if (probe_http) {
-        result.http = await httpProbe(sni, port);
-      }
-      if (probe_geo) {
-        result.geo = await geoIP(targetIP);
-      }
+      if (probe_http) result.http = await httpProbe(sni, port);
+      if (probe_geo) result.geo = await geoIP(targetIP);
     }
 
     results.push(result);
   }
 
-  res.status(200).json({
-    tested: sni_hosts.length,
-    results
-  });
+  res.status(200).json({ tested: sni_hosts.length, results });
 }
