@@ -1,4 +1,3 @@
-// pages/_app.jsx
 import '../styles/globals.css';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from 'next-themes';
@@ -11,15 +10,16 @@ export default function App({ Component, pageProps }) {
         toastOptions={{
           duration: 4000,
           style: {
-            background: '#1e1e2f',
-            color: '#fff',
-            border: '1px solid #2a2a3e',
+            background: '#0a0a0a',
+            color: '#00ffff',
+            border: '1px solid #00ffff40',
+            fontFamily: 'monospace',
           },
           success: {
-            iconTheme: { primary: '#10b981', secondary: '#fff' },
+            iconTheme: { primary: '#00ff00', secondary: '#0a0a0a' },
           },
           error: {
-            iconTheme: { primary: '#ef4444', secondary: '#fff' },
+            iconTheme: { primary: '#ff3333', secondary: '#0a0a0a' },
           },
         }}
       />
