@@ -310,24 +310,16 @@ export default function Scanner() {
 
   // Splash screen
   if (!splashComplete) {
-    return (
-      <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
-        {mounted && (
-          <Lottie
-            lottieRef={lottieRef}
-            animationData="/animations/bruteforce_master.json"
-            loop={false}
-            autoplay={true}
-            initialSegment={SPLASH_SEGMENTS[0]}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-        )}
-        <div className="absolute bottom-8 text-cyan-400 text-xs tracking-widest">
-          BruteforceScannerR
-        </div>
+  return (
+    <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="text-cyan-400 text-xl mb-4">DECRYPTING ACCESS...</div>
+        <div className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mx-auto"/>
+        <div className="mt-4 text-cyan-400/60 text-xs tracking-widest">BruteforceScannerR</div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   // Main App
   return (
@@ -361,22 +353,22 @@ export default function Scanner() {
           <div className="max-w-screen-xl mx-auto px-4 md:px-6 py-6 space-y-5">
             
             {/* ==================== DASHBOARD TAB ==================== */}
-            {tab === "dashboard" && (
-              <div className="space-y-4">
-                <MetricsPanel aps={scanMetrics.aps} totalAttempts={scanMetrics.total} elapsed={scanMetrics.elapsed} />
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <div className="bg-black/40 border border-cyan-500/20 rounded-2xl p-5 backdrop-blur-sm"><h3 className="text-sm font-bold text-cyan-400 mb-3">Live Attempts</h3><AttemptGraph dataPoints={graphData} /></div>
-                  <div className="bg-black/40 border border-cyan-500/20 rounded-2xl p-5 backdrop-blur-sm"><h3 className="text-sm font-bold text-cyan-400 mb-3">Terminal Log</h3><TerminalLog logs={terminalLogs} /></div>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <button onClick={()=>setTab("sni")} className="p-4 bg-cyan-500/5 border border-cyan-500/20 rounded-xl hover:border-cyan-500/40"><FiShield className="text-cyan-400 text-xl mb-1"/><div className="font-bold text-sm">SNI Scanner</div></button>
-                  <button onClick={()=>setTab("recon")} className="p-4 bg-purple-500/5 border border-purple-500/20 rounded-xl hover:border-purple-500/40"><FiGlobe className="text-purple-400 text-xl mb-1"/><div className="font-bold text-sm">Recon</div></button>
-                  <button onClick={()=>setTab("proxy")} className="p-4 bg-green-500/5 border border-green-500/20 rounded-xl hover:border-green-500/40"><FiZap className="text-green-400 text-xl mb-1"/><div className="font-bold text-sm">Proxy Tester</div></button>
-                  <button onClick={()=>setTab("ssl")} className="p-4 bg-red-500/5 border border-red-500/20 rounded-xl hover:border-red-500/40"><FiActivity className="text-red-400 text-xl mb-1"/><div className="font-bold text-sm">SSL Scanner</div></button>
-                </div>
-              </div>
-            )}
-
+{tab === "dashboard" && (
+  <div className="space-y-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <StatCard label="SNI Scans" value={stats.sniScans} color="cyan" icon={<FiShield/>}/>
+      <StatCard label="Recon Scans" value={stats.reconScans} color="purple" icon={<FiGlobe/>}/>
+      <StatCard label="Proxies Found" value={stats.proxiesFound} color="green" icon={<FiZap/>}/>
+      <StatCard label="Last Scan" value={stats.lastScan ? new Date(stats.lastScan).toLocaleDateString() : "—"} color="yellow" icon={<FiActivity/>}/>
+    </div>
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <button onClick={()=>setTab("sni")} className="p-4 bg-cyan-500/5 border border-cyan-500/20 rounded-xl hover:border-cyan-500/40"><FiShield className="text-cyan-400 text-xl mb-1"/><div className="font-bold text-sm">SNI Scanner</div></button>
+      <button onClick={()=>setTab("recon")} className="p-4 bg-purple-500/5 border border-purple-500/20 rounded-xl hover:border-purple-500/40"><FiGlobe className="text-purple-400 text-xl mb-1"/><div className="font-bold text-sm">Recon</div></button>
+      <button onClick={()=>setTab("proxy")} className="p-4 bg-green-500/5 border border-green-500/20 rounded-xl hover:border-green-500/40"><FiZap className="text-green-400 text-xl mb-1"/><div className="font-bold text-sm">Proxy Tester</div></button>
+      <button onClick={()=>setTab("ssl")} className="p-4 bg-red-500/5 border border-red-500/20 rounded-xl hover:border-red-500/40"><FiActivity className="text-red-400 text-xl mb-1"/><div className="font-bold text-sm">SSL Scanner</div></button>
+    </div>
+  </div>
+)}
             {/* ==================== SNI TAB ==================== */}
             {tab === "sni" && (
               <>
