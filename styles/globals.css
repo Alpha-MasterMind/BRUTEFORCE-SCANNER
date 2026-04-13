@@ -2,15 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom scrollbar - neon cyan */
+/* ===== CUSTOM SCROLLBAR - NEON CYAN ===== */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #0a0a0a; }
-::-webkit-scrollbar-thumb { background: #00ffff40; border-radius: 8px; }
-::-webkit-scrollbar-thumb:hover { background: #00ffff80; }
+::-webkit-scrollbar-track { background: #0a0a0a; box-shadow: inset 0 0 6px #00ffff20; }
+::-webkit-scrollbar-thumb { background: #00ffff60; border-radius: 8px; box-shadow: 0 0 8px #00ffff; }
+::-webkit-scrollbar-thumb:hover { background: #00ffff; box-shadow: 0 0 12px #00ffff; }
 
-* { transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease; }
+* {
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
 
-/* Glitch animation */
+/* ===== ANIMATIONS ===== */
 @keyframes glitch {
   0% { transform: translate(0); }
   20% { transform: translate(-2px, 2px); }
@@ -21,61 +23,139 @@
 }
 .glitch:hover { animation: glitch 0.3s infinite; }
 
-/* Slide-in for terminal logs */
 @keyframes slideIn {
   from { opacity: 0; transform: translateX(-10px); }
   to { opacity: 1; transform: translateX(0); }
 }
 .animate-slideIn { animation: slideIn 0.2s ease forwards; }
 
-/* Card hover lift */
-.card-hover {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 5px #00ff66, 0 0 10px #00ff6640; }
+  50% { box-shadow: 0 0 15px #00ff66, 0 0 30px #00ff6680; }
 }
-.card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 20px #00ff6640;
-  border-color: #00ff6680;
-}
+.pulse-glow { animation: pulse-glow 2s infinite; }
 
-/* Animated background grid */
-.bg-grid {
-  background-image: linear-gradient(#00ff6610 1px, transparent 1px),
-                    linear-gradient(90deg, #00ff6610 1px, transparent 1px);
-  background-size: 40px 40px;
-  animation: moveGrid 20s linear infinite;
-}
 @keyframes moveGrid {
   0% { background-position: 0 0; }
   100% { background-position: 40px 40px; }
 }
-
-/* Scan-line overlay */
-.scan-lines {
-  position: relative;
-}
-.scan-lines::after {
-  content: "";
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: repeating-linear-gradient(0deg, rgba(0,255,102,0.02) 0px, transparent 2px, transparent 4px);
-  pointer-events: none;
-  z-index: 100;
+.bg-grid {
+  background-image: 
+    linear-gradient(#00ff6615 1px, transparent 1px),
+    linear-gradient(90deg, #00ff6615 1px, transparent 1px);
+  background-size: 40px 40px;
+  animation: moveGrid 20s linear infinite;
 }
 
-/* Blinking cursor */
-.blink-cursor {
-  width: 8px;
-  height: 16px;
-  background-color: #00ff66;
-  animation: blink 1s step-end infinite;
-}
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
 }
+.blink-cursor {
+  width: 10px;
+  height: 18px;
+  background: linear-gradient(to bottom, #00ff66, #00cc44);
+  box-shadow: 0 0 8px #00ff66;
+  animation: blink 1s step-end infinite;
+}
 
-/* Light mode overrides (if ever used) */
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+.scan-lines {
+  position: relative;
+  overflow: hidden;
+}
+.scan-lines::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(0deg, 
+    rgba(0,255,102,0.03) 0px, 
+    transparent 2px, 
+    transparent 4px);
+  pointer-events: none;
+  z-index: 100;
+}
+.scan-lines::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 10px;
+  background: linear-gradient(to bottom, #00ff6620, transparent);
+  animation: scanline 8s linear infinite;
+  pointer-events: none;
+  z-index: 101;
+}
+
+@keyframes border-pulse {
+  0%, 100% { border-color: #00ff6640; }
+  50% { border-color: #00ff66; }
+}
+.border-pulse { animation: border-pulse 2s infinite; }
+
+/* ===== CARD HOVER EFFECTS ===== */
+.card-hover {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid #00ff6630;
+  box-shadow: 0 0 10px #00ff6610;
+}
+.card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 25px #00ff6660, 0 0 10px #00ff6640 inset;
+  border-color: #00ff66;
+}
+
+/* ===== NEON TEXT ===== */
+.neon-text {
+  text-shadow: 0 0 8px currentColor;
+}
+
+/* ===== GLASSMORPHISM ===== */
+.glass-panel {
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid #00ff6630;
+}
+
+/* ===== STAT CARD GLOW ===== */
+.stat-card-glow {
+  position: relative;
+  overflow: hidden;
+}
+.stat-card-glow::before {
+  content: "";
+  position: absolute;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: radial-gradient(circle, #00ff6620 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.stat-card-glow:hover::before {
+  opacity: 1;
+}
+
+/* ===== TABLE ROW HOVER ===== */
+tr {
+  transition: background-color 0.2s;
+}
+tr:hover {
+  background: #00ff6608 !important;
+}
+
+/* ===== BUTTON GRADIENT ===== */
+.btn-gradient {
+  background: linear-gradient(135deg, #00cc66, #00994d);
+  transition: all 0.2s;
+}
+.btn-gradient:hover {
+  background: linear-gradient(135deg, #00ff66, #00cc66);
+  box-shadow: 0 0 20px #00ff6680;
+}
+
+/* ===== LIGHT MODE OVERRIDES (unused but kept) ===== */
 .light {
   --bg-primary: #f8fafc;
   --bg-secondary: #e2e8f0;
