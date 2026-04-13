@@ -2,43 +2,84 @@
 @tailwind components;
 @tailwind utilities;
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* Custom scrollbar - neon cyan */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #0a0a0a; }
+::-webkit-scrollbar-thumb { background: #00ffff40; border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: #00ffff80; }
+
+* { transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease; }
+
+/* Glitch animation */
+@keyframes glitch {
+  0% { transform: translate(0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(-2px, -2px); }
+  60% { transform: translate(2px, 2px); }
+  80% { transform: translate(2px, -2px); }
+  100% { transform: translate(0); }
 }
-::-webkit-scrollbar-track {
-  background: #0a0a0a;
+.glitch:hover { animation: glitch 0.3s infinite; }
+
+/* Slide-in for terminal logs */
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
 }
-::-webkit-scrollbar-thumb {
-  background: #00ffff40;
-  border-radius: 8px;
+.animate-slideIn { animation: slideIn 0.2s ease forwards; }
+
+/* Card hover lift */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #00ffff80;
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px #00ff6640;
+  border-color: #00ff6680;
 }
 
-* {
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+/* Animated background grid */
+.bg-grid {
+  background-image: linear-gradient(#00ff6610 1px, transparent 1px),
+                    linear-gradient(90deg, #00ff6610 1px, transparent 1px);
+  background-size: 40px 40px;
+  animation: moveGrid 20s linear infinite;
+}
+@keyframes moveGrid {
+  0% { background-position: 0 0; }
+  100% { background-position: 40px 40px; }
 }
 
+/* Scan-line overlay */
+.scan-lines {
+  position: relative;
+}
+.scan-lines::after {
+  content: "";
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(0deg, rgba(0,255,102,0.02) 0px, transparent 2px, transparent 4px);
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* Blinking cursor */
+.blink-cursor {
+  width: 8px;
+  height: 16px;
+  background-color: #00ff66;
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Light mode overrides (if ever used) */
 .light {
   --bg-primary: #f8fafc;
   --bg-secondary: #e2e8f0;
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --border: #cbd5e1;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-.animate-slideIn {
-  animation: slideIn 0.2s ease forwards;
 }
