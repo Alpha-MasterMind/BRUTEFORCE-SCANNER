@@ -5,14 +5,13 @@ import toast from 'react-hot-toast';
 import { FiCopy, FiMoon, FiSun, FiChevronDown, FiChevronUp, FiShield, FiGlobe, FiZap, FiActivity, FiVolume2, FiVolumeX } from 'react-icons/fi';
 import { useTheme } from 'next-themes';
 
-// ==================== SPLASH SCREEN SEQUENCE ====================
+// ==================== CONSTANTS ====================
 const SPLASH_STAGES = [
   { image: '/authorization.jpg', text: 'DECRYPTING ACCESS...', subtext: 'AUTHORIZATION', duration: 2000 },
   { image: '/breaching.jpg', text: 'BREACH IN-PROGRESS', subtext: 'BREACHING', progress: 64, duration: 2000 },
   { image: '/access-granted.jpg', text: 'ACCESS GRANTED', subtext: 'Welcome, Operator', duration: 2000 }
 ];
 
-// ==================== EXPANDED ZERO-RATED DOMAINS ====================
 const MTN_DOMAINS = [ "mtn.co.za", "www.mtn.co.za", "nofunds.mtn.co.za", "onlinecms.mtn.co.za", "dev.onlinecms.mtn.co.za", "myaccount.mtn.co.za", "selfservice.mtn.co.za", "myconnect.mtn.co.za", "portal.mtn.co.za", "business.mtn.co.za", "api.mtn.co.za" ];
 const VODACOM_DOMAINS = [ "vodacom.co.za", "www.vodacom.co.za", "selfservice.vodacom.co.za", "vodapay.vodacom.co.za", "connectu.vodacom.co.za", "careers24.com", "pnet.co.za", "careerjunction.co.za", "jobmail.co.za", "indeed.com", "giraffe.co.za" ];
 const CELLC_DOMAINS = [ "cellc.co.za", "www.cellc.co.za", "gov.za", "www.gov.za", "health.gov.za", "education.gov.za", "sassa.gov.za", "dha.gov.za", "transport.gov.za", "saps.gov.za", "sadag.org", "lifelinesa.co.za", "nspca.co.za", "childwelfare.org.za" ];
@@ -33,6 +32,18 @@ const PORT_PROFILES = { web:"80,443,8080,8443", proxy:"3128,8888,9090,1080,8118"
 const PORT_RISK = { 80:2, 443:2, 8080:3, 8443:2, 3128:8, 8888:8, 9090:7, 1080:7, 8118:7, 8000:6, 8001:6, 9000:6 };
 const PORT_LABELS = { 3128:"SQUID", 8888:"PROXY", 9090:"PROXY", 1080:"SOCKS", 8118:"PRIVOXY", 8080:"HTTP-ALT", 8000:"ADMIN", 9000:"ADMIN" };
 const FLAGS = { "South Africa":"🇿🇦", "United States":"🇺🇸", "Germany":"🇩🇪", "Netherlands":"🇳🇱", "France":"🇫🇷", "United Kingdom":"🇬🇧", "Russia":"🇷🇺", "China":"🇨🇳", "Singapore":"🇸🇬" };
+const SUBDOMAINS = ['www','mail','api','vpn','admin','portal'];
+
+// ==================== ERROR BOUNDARY ====================
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { hasError: false }; }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(error, errorInfo) { console.error('ErrorBoundary caught:', error, errorInfo); }
+  render() {
+    if (this.state.hasError) return <div className="min-h-screen bg-black text-red-500 p-8 font-mono">Something went wrong. Please refresh.</div>;
+    return this.props.children;
+  }
+}
 
 // ==================== SUBCOMPONENTS ====================
 function RiskBadge({ port }) { const risk = PORT_RISK[port]||2; const label = PORT_LABELS[port]||String(port); const cls = risk>=7?"bg-red-500/20 text-red-300 border-red-500/40":risk>=5?"bg-orange-500/20 text-orange-300 border-orange-500/40":"bg-cyan-500/10 text-cyan-300 border-cyan-500/30"; return <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono border ${cls}`}>{label}</span>; }
@@ -42,7 +53,6 @@ function StatCard({ label, value, color="cyan", icon, sub }) { const cols = { re
 function ProgressBar({ pct, color="cyan" }) { const c = color==="green"?"from-green-500 to-emerald-400":"from-cyan-500 to-blue-500"; return (<div className="w-full h-0.5 bg-cyan-500/10"><div className={`h-full bg-gradient-to-r ${c} transition-all duration-500`} style={{width:`${pct}%`}}/></div>); }
 function SkeletonRow() { return (<tr className="animate-pulse"><td className="pl-3 py-2.5"><div className="w-1.5 h-1.5 rounded-full bg-cyan-500/30"/></td><td className="px-3 py-2.5"><div className="h-3 bg-cyan-500/30 rounded w-12"/></td><td className="px-3 py-2.5"><div className="h-3 bg-cyan-500/30 rounded w-32"/></td><td className="px-3 py-2.5"><div className="h-3 bg-cyan-500/30 rounded w-20"/></td><td className="px-3 py-2.5"><div className="h-3 bg-cyan-500/30 rounded w-16"/></td><td className="px-3 py-2.5"><div className="h-3 bg-cyan-500/30 rounded w-10"/></td><td className="px-3 py-2.5"><div className="h-3 bg-cyan-500/30 rounded w-24"/></td><td className="px-3 py-2.5"><div className="h-3 bg-cyan-500/30 rounded w-10"/></td><td className="px-3 py-2.5"><div className="h-3 bg-cyan-500/30 rounded w-8"/></td><td className="px-2 py-2.5"><div className="w-3 h-3 bg-cyan-500/30 rounded"/></td></tr>); }
 
-// ==================== METRICS PANEL ====================
 function MetricsPanel({ aps, totalAttempts, elapsed }) {
   return (
     <div className="bg-black/75 border border-[#00ff66] rounded p-4 shadow-[0_0_12px_#00ff6640] col-span-12 flex flex-wrap justify-between gap-4 card-hover">
@@ -53,7 +63,6 @@ function MetricsPanel({ aps, totalAttempts, elapsed }) {
   );
 }
 
-// ==================== TERMINAL LOG (with prompt & cursor) ====================
 function TerminalLog({ logs }) {
   const endRef = useRef(null);
   const [isClient, setIsClient] = useState(false);
@@ -61,7 +70,7 @@ function TerminalLog({ logs }) {
   useEffect(() => { if (isClient) endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [logs, isClient]);
   if (!isClient) return <div className="bg-black/75 border border-[#00ff66] rounded p-4 h-48 card-hover">Loading terminal...</div>;
   return (
-    <div className="bg-black/75 border border-[#00ff66] rounded p-4 h-48 overflow-y-auto font-mono text-xs sm:text-sm card-hover">
+    <div className="bg-black/75 border border-[#00ff66] rounded p-4 h-48 overflow-y-auto font-mono text-xs sm:text-sm card-hover" aria-live="polite">
       {logs.map((log, i) => <div key={`log-${i}`} className="text-[#00ff66] animate-slideIn break-all">{log}</div>)}
       <div className="flex items-center gap-2 mt-2 text-[#00ff66]">
         <span className="text-cyan-400">$</span>
@@ -73,7 +82,6 @@ function TerminalLog({ logs }) {
   );
 }
 
-// ==================== ATTEMPT GRAPH (with grid & glow) ====================
 function AttemptGraph({ dataPoints }) {
   const canvasRef = useRef();
   const [isClient, setIsClient] = useState(false);
@@ -88,11 +96,9 @@ function AttemptGraph({ dataPoints }) {
     canvas.width = width;
     canvas.height = 200;
     ctx.clearRect(0, 0, width, 200);
-    // Grid
     ctx.strokeStyle = '#00ff6620';
     ctx.lineWidth = 0.5;
     for (let i = 0; i <= 4; i++) { const y = i * 50; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke(); }
-    // Data line with glow
     ctx.shadowColor = '#00ff66';
     ctx.shadowBlur = 8;
     ctx.strokeStyle = '#00ff66';
@@ -107,8 +113,41 @@ function AttemptGraph({ dataPoints }) {
   return <canvas ref={canvasRef} className="w-full h-48" />;
 }
 
+// ==================== AUTHORIZATION GATE ====================
+function AuthorizationGate({ children }) {
+  const [authorized, setAuthorized] = useState(false);
+  useEffect(() => {
+    const consent = localStorage.getItem('scanner_consent');
+    if (consent === 'true') setAuthorized(true);
+  }, []);
+  const handleConsent = () => {
+    localStorage.setItem('scanner_consent', 'true');
+    setAuthorized(true);
+  };
+  if (authorized) return children;
+  return (
+    <div className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4 font-mono">
+      <div className="max-w-md bg-black border border-red-500/50 rounded-xl p-6 text-center shadow-[0_0_30px_#ff000040]">
+        <div className="text-red-500 text-2xl mb-4">⚠️ LEGAL WARNING</div>
+        <p className="text-cyan-400 text-sm mb-4">
+          This tool performs active network scanning and probing. Using it against systems <strong>without explicit written permission</strong> is illegal.
+        </p>
+        <p className="text-white/80 text-xs mb-6">
+          By clicking "I Understand", you confirm that you are authorized to scan the targets you intend to test and accept full legal responsibility.
+        </p>
+        <button
+          onClick={handleConsent}
+          className="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition"
+        >
+          I Understand – Proceed
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ==================== MAIN COMPONENT ====================
-export default function Scanner() {
+function ScannerApp() {
   const { theme, setTheme } = useTheme();
   const [tab, setTab] = useState("dashboard");
   const [mounted, setMounted] = useState(false);
@@ -158,9 +197,13 @@ export default function Scanner() {
   const [scanMetrics, setScanMetrics] = useState({ aps: 0, total: 0, elapsed: '00:00' });
   const scanStartTime = useRef(null);
   const [currentTime, setCurrentTime] = useState(new Date());
-  
-  const SUBDOMAINS = ['www','mail','api','vpn','admin','portal'];
-  
+
+  // Abort controllers for fetch cancellation
+  const sniAbortController = useRef(null);
+  const reconAbortController = useRef(null);
+  const reconPendingResults = useRef([]);
+  const reconBatchTimer = useRef(null);
+
   // Clock update
   useEffect(() => { const timer = setInterval(() => setCurrentTime(new Date()), 1000); return () => clearInterval(timer); }, []);
   useEffect(() => { setMounted(true); }, []);
@@ -198,6 +241,15 @@ export default function Scanner() {
     }
   }, [sniStatus, reconStatus]);
 
+  // Cleanup abort controllers on unmount
+  useEffect(() => {
+    return () => {
+      sniAbortController.current?.abort();
+      reconAbortController.current?.abort();
+      if (reconBatchTimer.current) clearTimeout(reconBatchTimer.current);
+    };
+  }, []);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKey = (e) => {
@@ -218,8 +270,21 @@ export default function Scanner() {
 
   const addLog = (text) => setTerminalLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${text}`]);
 
+  // Copy with fallback
   const copyToClipboard = (text, label = 'Copied!') => {
-    navigator.clipboard?.writeText(text).then(() => toast.success(label)).catch(() => toast.error('Failed to copy'));
+    const fallbackCopy = () => {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try { document.execCommand('copy'); toast.success(label); } catch { toast.error('Failed to copy'); }
+      document.body.removeChild(textArea);
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(() => toast.success(label)).catch(fallbackCopy);
+    } else {
+      fallbackCopy();
+    }
   };
 
   const updateStats = (type, extra = {}) => {
@@ -230,27 +295,47 @@ export default function Scanner() {
     });
   };
 
-  const playBeep = useCallback(() => {
-    if (!soundEnabled) return;
-    try { const audio = new Audio('/beep.mp3'); audio.volume = 0.3; audio.play(); } catch {}
-  }, [soundEnabled]);
-
   // ==================== SCAN FUNCTIONS ====================
   async function launchSNI() {
+    // Cancel any ongoing scan
+    sniAbortController.current?.abort();
+    sniAbortController.current = new AbortController();
+    
     setSniError(""); setSniResults([]); setSniTested(0); setScanMetrics({ aps:0, total:0, elapsed:'00:00' }); setGraphData([]);
     const hosts = sniCustomText.trim() ? sniCustomText.split("\n").map(s=>s.trim()).filter(Boolean) : PRESET_GROUPS[sniPreset]||ALL_SA_DOMAINS;
     setSniTotal(hosts.length); setSniStatus("running");
     addLog(`Starting SNI scan on ${hosts.length} hosts...`);
     toast.loading(`Scanning ${hosts.length} SNI hosts...`, { id: 'sni-scan' });
     try {
-      const r = await fetch('/api/sniScan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sni_hosts:hosts,target_ip:sniTargetIP||null,port:parseInt(sniPort)||443,probe_http:sniProbeHTTP,probe_geo:sniProbeGeo})});
+      const r = await fetch('/api/sniScan',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({sni_hosts:hosts,target_ip:sniTargetIP||null,port:parseInt(sniPort)||443,probe_http:sniProbeHTTP,probe_geo:sniProbeGeo}),
+        signal: sniAbortController.current.signal
+      });
       const d = await r.json();
       if(d.error){ setSniError(d.error); setSniStatus("error"); toast.error(d.error, { id: 'sni-scan' }); addLog(`ERROR: ${d.error}`); }
-      else { setSniResults(d.results); setSniStatus("done"); setSniTested(d.tested); toast.success(`Found ${d.results.length} working SNIs`, { id: 'sni-scan' }); addLog(`SUCCESS: ${d.results.length} working SNIs found.`); updateStats('sni'); playBeep(); }
-    } catch(e){ setSniError(e.message); setSniStatus("error"); toast.error(e.message, { id: 'sni-scan' }); addLog(`ERROR: ${e.message}`); }
+      else { setSniResults(d.results); setSniStatus("done"); setSniTested(d.tested); toast.success(`Found ${d.results.length} working SNIs`, { id: 'sni-scan' }); addLog(`SUCCESS: ${d.results.length} working SNIs found.`); updateStats('sni'); }
+    } catch(e){
+      if (e.name === 'AbortError') { setSniStatus("idle"); toast.dismiss('sni-scan'); addLog('SNI scan cancelled.'); return; }
+      setSniError(e.message); setSniStatus("error"); toast.error(e.message, { id: 'sni-scan' }); addLog(`ERROR: ${e.message}`);
+    } finally {
+      sniAbortController.current = null;
+    }
   }
 
+  // Batched recon results update
+  const flushReconResults = useCallback(() => {
+    if (reconPendingResults.current.length === 0) return;
+    setReconResults(prev => [...prev, ...reconPendingResults.current]);
+    reconPendingResults.current = [];
+    reconBatchTimer.current = null;
+  }, []);
+
   async function launchRecon() {
+    reconAbortController.current?.abort();
+    reconAbortController.current = new AbortController();
+    
     setReconError(""); setReconResults([]); setReconProgress(0); setScanMetrics({ aps:0, total:0, elapsed:'00:00' }); setGraphData([]);
     const domains = reconDomains.split("\n").map(s=>s.trim()).filter(Boolean);
     if(!domains.length){ setReconError("Enter at least one domain."); toast.error("Enter at least one domain."); return; }
@@ -263,21 +348,44 @@ export default function Scanner() {
       for(const c of chunks) {
         await Promise.all(c.map(async d=>{
           try {
-            const r = await fetch('/api/reconSingle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({domain:d,profile:reconProfile})});
+            const r = await fetch('/api/reconSingle',{
+              method:'POST',
+              headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({domain:d,profile:reconProfile}),
+              signal: reconAbortController.current.signal
+            });
             const data = await r.json();
-            if(data.results) all.push(...data.results);
-            setReconResults([...all]);
+            if(data.results) {
+              all.push(...data.results);
+              reconPendingResults.current.push(...data.results);
+              if (!reconBatchTimer.current) {
+                reconBatchTimer.current = setTimeout(flushReconResults, 100);
+              }
+            }
+            // Progress based on completed domains
+            const completedDomains = all.length / (SUBDOMAINS.length + 1);
+            const totalEstimate = domains.length * (SUBDOMAINS.length + 1);
+            setReconProgress(Math.min(95, 5 + (completedDomains / totalEstimate) * 90));
           } catch(err){ console.error(err); }
         }));
-        setReconProgress(Math.min(95,5+(all.length/(domains.length*(SUBDOMAINS.length+1)))*90));
+        // Flush any pending after each chunk
+        if (reconBatchTimer.current) {
+          clearTimeout(reconBatchTimer.current);
+          flushReconResults();
+        }
       }
+      flushReconResults(); // final flush
       const proxyCount = all.filter(r=>r.proxy_ok).length;
       setReconStatus("done"); setReconProgress(100);
       toast.success(`Recon complete – ${all.length} live hosts, ${proxyCount} proxies`, { id: 'recon-scan' });
       addLog(`SUCCESS: ${all.length} live hosts, ${proxyCount} proxies found.`);
       updateStats('recon', { proxies: proxyCount });
-      playBeep();
-    } catch(e){ setReconError(e.message); setReconStatus("error"); toast.error(e.message, { id: 'recon-scan' }); addLog(`ERROR: ${e.message}`); }
+    } catch(e){
+      if (e.name === 'AbortError') { setReconStatus("idle"); toast.dismiss('recon-scan'); addLog('Recon scan cancelled.'); return; }
+      setReconError(e.message); setReconStatus("error"); toast.error(e.message, { id: 'recon-scan' }); addLog(`ERROR: ${e.message}`);
+    } finally {
+      reconAbortController.current = null;
+    }
   }
 
   async function testProxy() {
@@ -378,9 +486,9 @@ export default function Scanner() {
     );
   }
 
-  // Main App
+  // Main App (wrapped in AuthorizationGate)
   return (
-    <>
+    <AuthorizationGate>
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         <link rel="icon" type="image/jpeg" href="/logo.jpeg" />
@@ -400,7 +508,7 @@ export default function Scanner() {
             <div className="flex gap-4 items-center">
               <span>{currentTime.toLocaleTimeString()}</span>
               <span className="flex items-center gap-1"><span className={`w-2 h-2 rounded-full ${scanning ? 'bg-green-400 animate-pulse' : 'bg-cyan-400'}`}></span> SYS.OK</span>
-              <button onClick={() => setSoundEnabled(!soundEnabled)} className="text-cyan-400/60 hover:text-cyan-400">
+              <button onClick={() => setSoundEnabled(!soundEnabled)} className="text-cyan-400/60 hover:text-cyan-400" aria-label={soundEnabled ? "Mute sound effects" : "Unmute sound effects"}>
                 {soundEnabled ? <FiVolume2 size={14} /> : <FiVolumeX size={14} />}
               </button>
             </div>
@@ -428,17 +536,17 @@ export default function Scanner() {
             <div className="flex items-center gap-1">
               <div className="hidden md:flex gap-1">
                 {[["dashboard","📊"],["sni","📡"],["recon","🔍"],["proxy","🧪"],["ssl","🔒"]].map(([t,l])=>(
-                  <button key={t} onClick={()=>setTab(t)} className={`px-2 sm:px-4 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs tracking-wider transition-all ${tab===t?"bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 shadow-lg":"text-cyan-500/50 hover:text-cyan-400 hover:bg-cyan-500/5"}`}>
+                  <button key={t} onClick={()=>setTab(t)} className={`px-2 sm:px-4 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs tracking-wider transition-all ${tab===t?"bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 shadow-lg":"text-cyan-500/50 hover:text-cyan-400 hover:bg-cyan-500/5"}`} aria-label={`Switch to ${t} tab`}>
                     <span className="hidden sm:inline">{t==="dashboard"?"Dashboard":t.toUpperCase()}</span><span className="sm:hidden">{l}</span>
                   </button>
                 ))}
               </div>
               <div className="md:hidden">
-                <select value={tab} onChange={e=>setTab(e.target.value)} className="bg-black/60 border border-cyan-500/30 rounded-lg px-2 py-1 text-[10px] text-cyan-400 focus:outline-none">
+                <select value={tab} onChange={e=>setTab(e.target.value)} className="bg-black/60 border border-cyan-500/30 rounded-lg px-2 py-1 text-[10px] text-cyan-400 focus:outline-none" aria-label="Select tab">
                   <option value="dashboard">📊</option><option value="sni">📡</option><option value="recon">🔍</option><option value="proxy">🧪</option><option value="ssl">🔒</option>
                 </select>
               </div>
-              <button onClick={()=>setTheme(theme==='dark'?'light':'dark')} className="ml-1 sm:ml-2 p-1.5 sm:p-2 rounded-lg bg-cyan-500/5 hover:bg-cyan-500/10 text-cyan-400/60 hover:text-cyan-400 transition">
+              <button onClick={()=>setTheme(theme==='dark'?'light':'dark')} className="ml-1 sm:ml-2 p-1.5 sm:p-2 rounded-lg bg-cyan-500/5 hover:bg-cyan-500/10 text-cyan-400/60 hover:text-cyan-400 transition" aria-label="Toggle theme">
                 {theme==='dark'?<FiSun size={14}/>:<FiMoon size={14}/>}
               </button>
             </div>
@@ -521,9 +629,9 @@ export default function Scanner() {
                         <thead><tr className="text-[9px] sm:text-[10px] text-cyan-400/60 uppercase tracking-widest border-b border-cyan-500/20"><th className="w-4 pl-2 sm:pl-4"/><SortableHeader field="sni" currentField={sniSortField} setField={setSniSortField} asc={sniSortAsc} setAsc={setSniSortAsc}>SNI Host</SortableHeader><th className="px-2 sm:px-3 py-2 text-left">IP:Port</th><SortableHeader field="http" currentField={sniSortField} setField={setSniSortField} asc={sniSortAsc} setAsc={setSniSortAsc}>Status</SortableHeader><th className="px-2 sm:px-3 py-2 text-left">Title</th><th className="px-2 sm:px-3 py-2 text-left">Country</th><th className="px-2 sm:px-3 py-2 text-left">Time</th><th className="px-2 sm:px-3 py-2 text-left">Result</th><th className="w-4"/></tr></thead>
                         <tbody>
                           {sniStatus==="running" && sniResults.length===0 ? Array.from({length:5}).map((_,i)=><SkeletonRow key={i}/>) : sniDisplayed.map((r,i)=>(
-                            <tr key={r.sni+i} className="border-b border-cyan-500/10 hover:bg-cyan-500/5 transition group">
+                            <tr key={`${r.sni}-${r.ip}-${r.port}-${i}`} className="border-b border-cyan-500/10 hover:bg-cyan-500/5 transition group">
                               <td className="pl-2 sm:pl-4 py-2"><div className="w-2 h-2 rounded-full bg-green-400 shadow-[0_0_8px_#00ff00]"/></td>
-                              <td className="px-2 sm:px-3 py-2 font-mono text-cyan-300 flex items-center gap-1 sm:gap-2"><span className="truncate max-w-[100px] sm:max-w-[150px]">{r.sni}</span><button onClick={()=>copyToClipboard(r.sni,'SNI copied')} className="opacity-0 group-hover:opacity-100 transition"><FiCopy size={12} className="text-cyan-400/60 hover:text-cyan-400"/></button></td>
+                              <td className="px-2 sm:px-3 py-2 font-mono text-cyan-300 flex items-center gap-1 sm:gap-2"><span className="truncate max-w-[100px] sm:max-w-[150px]">{r.sni}</span><button onClick={()=>copyToClipboard(r.sni,'SNI copied')} className="opacity-0 group-hover:opacity-100 transition" aria-label="Copy SNI"><FiCopy size={12} className="text-cyan-400/60 hover:text-cyan-400"/></button></td>
                               <td className="px-2 sm:px-3 py-2 font-mono text-cyan-400/60">{r.ip}:{r.port}</td>
                               <td className="px-2 sm:px-3 py-2">{r.http?.status?<span className={r.http.status<300?"text-green-400":"text-yellow-400"}>{r.http.status}</span>:"—"}</td>
                               <td className="px-2 sm:px-3 py-2 text-cyan-400/60 max-w-[120px] sm:max-w-[160px] truncate">{r.http?.title||"—"}</td>
@@ -572,7 +680,7 @@ export default function Scanner() {
                             <tr key={r.domain+i} className="border-b border-cyan-500/10 hover:bg-cyan-500/5 transition group">
                               <td className="pl-2 sm:pl-3 py-2"><div className={`w-1.5 h-1.5 rounded-full ${r.highlight?"bg-red-400 shadow-[0_0_6px_#ff3333]":"bg-cyan-400/40"}`}/></td>
                               <td className="px-2 sm:px-3 py-2"><ScoreDot score={r.score}/></td>
-                              <td className="px-2 sm:px-3 py-2 font-mono text-cyan-300 flex items-center gap-1 sm:gap-2"><span className="truncate max-w-[100px] sm:max-w-[150px]">{r.domain}</span><button onClick={()=>copyToClipboard(r.domain,'Domain copied')} className="opacity-0 group-hover:opacity-100 transition"><FiCopy size={12} className="text-cyan-400/60 hover:text-cyan-400"/></button></td>
+                              <td className="px-2 sm:px-3 py-2 font-mono text-cyan-300 flex items-center gap-1 sm:gap-2"><span className="truncate max-w-[100px] sm:max-w-[150px]">{r.domain}</span><button onClick={()=>copyToClipboard(r.domain,'Domain copied')} className="opacity-0 group-hover:opacity-100 transition" aria-label="Copy domain"><FiCopy size={12} className="text-cyan-400/60 hover:text-cyan-400"/></button></td>
                               <td className="px-2 sm:px-3 py-2 font-mono text-cyan-400/60">{(r.ips||[])[0]||"—"}</td>
                               <td className="px-2 sm:px-3 py-2"><div className="flex gap-1 flex-wrap">{(r.open_ports||[]).map(p=><RiskBadge key={p} port={p}/>)}</div></td>
                               <td className="px-2 sm:px-3 py-2">{r.proxy_ok?<Chip color="green" glow>⚡</Chip>:<span className="text-cyan-400/20">—</span>}</td>
@@ -633,10 +741,19 @@ export default function Scanner() {
         {/* Mobile Bottom Navigation */}
         <div className="md:hidden fixed bottom-0 left-0 right-0 bg-black/90 border-t border-cyan-500/30 backdrop-blur-xl flex justify-around py-2 z-40">
           {[["dashboard","📊"],["sni","📡"],["recon","🔍"],["proxy","🧪"],["ssl","🔒"]].map(([t,icon])=>(
-            <button key={t} onClick={()=>setTab(t)} className={`p-3 rounded-lg ${tab===t?"bg-cyan-500/20 text-cyan-400":"text-cyan-500/50"}`}>{icon}</button>
+            <button key={t} onClick={()=>setTab(t)} className={`p-3 rounded-lg ${tab===t?"bg-cyan-500/20 text-cyan-400":"text-cyan-500/50"}`} aria-label={`Switch to ${t} tab`}>{icon}</button>
           ))}
         </div>
       </div>
-    </>
+    </AuthorizationGate>
+  );
+}
+
+// Wrap with ErrorBoundary
+export default function Scanner() {
+  return (
+    <ErrorBoundary>
+      <ScannerApp />
+    </ErrorBoundary>
   );
 }
