@@ -61,10 +61,10 @@ function SkeletonRow() { return (<tr className="animate-pulse"><td className="pl
 // ==================== METRICS PANEL ====================
 function MetricsPanel({ aps, totalAttempts, elapsed }) {
   return (
-    <div className="bg-black/75 border border-[#00ff66] rounded p-4 shadow-[0_0_12px_#00ff6640] col-span-12 flex justify-between">
-      <div><div className="text-xs opacity-70">ATTEMPTS/SEC</div><div className="text-2xl font-bold text-[#00ff66] drop-shadow-[0_0_8px_#00ff66]">{aps}</div></div>
-      <div><div className="text-xs opacity-70">TOTAL ATTEMPTS</div><div className="text-2xl font-bold text-[#00ff66]">{totalAttempts}</div></div>
-      <div><div className="text-xs opacity-70">ELAPSED</div><div className="text-2xl font-bold text-[#00ff66]">{elapsed}</div></div>
+    <div className="bg-black/75 border border-[#00ff66] rounded p-4 shadow-[0_0_12px_#00ff6640] col-span-12 flex flex-wrap justify-between gap-4">
+      <div className="flex-1 min-w-[100px]"><div className="text-xs opacity-70">ATTEMPTS/SEC</div><div className="text-xl sm:text-2xl font-bold text-[#00ff66] drop-shadow-[0_0_8px_#00ff66]">{aps}</div></div>
+      <div className="flex-1 min-w-[100px]"><div className="text-xs opacity-70">TOTAL ATTEMPTS</div><div className="text-xl sm:text-2xl font-bold text-[#00ff66]">{totalAttempts}</div></div>
+      <div className="flex-1 min-w-[100px]"><div className="text-xs opacity-70">ELAPSED</div><div className="text-xl sm:text-2xl font-bold text-[#00ff66]">{elapsed}</div></div>
     </div>
   );
 }
@@ -77,8 +77,8 @@ function TerminalLog({ logs }) {
   useEffect(() => { if (isClient) endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [logs, isClient]);
   if (!isClient) return <div className="bg-black/75 border border-[#00ff66] rounded p-4 h-48">Loading terminal...</div>;
   return (
-    <div className="bg-black/75 border border-[#00ff66] rounded p-4 h-48 overflow-y-auto font-mono text-sm">
-      {logs.map((log, i) => <div key={`log-${i}`} className="text-[#00ff66] animate-slideIn">{log}</div>)}
+    <div className="bg-black/75 border border-[#00ff66] rounded p-4 h-48 overflow-y-auto font-mono text-xs sm:text-sm">
+      {logs.map((log, i) => <div key={`log-${i}`} className="text-[#00ff66] animate-slideIn break-all">{log}</div>)}
       <div ref={endRef} />
     </div>
   );
@@ -95,15 +95,23 @@ function AttemptGraph({ dataPoints }) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    ctx.clearRect(0, 0, 800, 200);
+    const width = canvas.parentElement?.clientWidth || 800;
+    canvas.width = width;
+    canvas.height = 200;
+    ctx.clearRect(0, 0, width, 200);
     ctx.strokeStyle = '#00ff66';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    dataPoints.forEach((v, i) => { const x = i * 15; const y = 200 - (v / 100) * 200; i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); });
+    const step = width / dataPoints.length;
+    dataPoints.forEach((v, i) => {
+      const x = i * step;
+      const y = 200 - (v / 100) * 200;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
     ctx.stroke();
   }, [dataPoints, isClient]);
   if (!isClient) return <div className="bg-black/75 border border-[#00ff66] rounded p-4 h-48">Loading graph...</div>;
-  return <canvas ref={canvasRef} width={800} height={200} className="w-full h-full" />;
+  return <canvas ref={canvasRef} className="w-full h-48" />;
 }
 
 // ==================== MAIN COMPONENT ====================
@@ -327,25 +335,23 @@ export default function Scanner() {
     </th>
   );
 
-  // Splash screen (sequential images)
+  // Splash screen (responsive images with object-fit contain)
   if (!splashComplete) {
     const stage = SPLASH_STAGES[splashStage] || SPLASH_STAGES[SPLASH_STAGES.length - 1];
     return (
-      <div 
-        className="min-h-screen flex items-center justify-center bg-black font-mono relative"
-        style={{
-          backgroundImage: `url('${stage.image}')`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center'
-        }}
-      >
-        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-        <div className="relative z-10 text-center max-w-md px-6">
-          <div className="text-cyan-400 text-sm mb-4 tracking-widest animate-pulse">
+      <div className="fixed inset-0 bg-black z-50 flex items-center justify-center font-mono">
+        <img 
+          src={stage.image} 
+          alt={stage.text}
+          className="absolute inset-0 w-full h-full object-contain md:object-cover"
+        />
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+        <div className="relative z-10 text-center px-4 py-8 max-w-md w-full">
+          <div className="text-cyan-400 text-base sm:text-lg md:text-xl mb-4 tracking-widest animate-pulse">
             {stage.text}
           </div>
           {stage.subtext && (
-            <div className="text-green-400 text-xs mb-6 whitespace-pre-line leading-relaxed">
+            <div className="text-green-400 text-sm sm:text-base mb-6 whitespace-pre-line leading-relaxed">
               {stage.subtext}
             </div>
           )}
@@ -355,10 +361,10 @@ export default function Scanner() {
                 className="h-full bg-gradient-to-r from-cyan-500 to-green-500 transition-all duration-300"
                 style={{ width: `${stage.progress}%` }}
               />
-              <div className="text-right text-cyan-400 text-[10px] mt-0.5">{stage.progress}%</div>
+              <div className="text-right text-cyan-400 text-xs mt-0.5">{stage.progress}%</div>
             </div>
           )}
-          <div className="text-cyan-500/40 text-[10px] tracking-widest">
+          <div className="text-cyan-500/40 text-xs sm:text-sm tracking-widest">
             BruteforceScannerR
           </div>
         </div>
@@ -370,6 +376,7 @@ export default function Scanner() {
   return (
     <>
       <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         <link rel="icon" type="image/jpeg" href="/logo.jpeg" />
         <link rel="apple-touch-icon" href="/logo.jpeg" />
         <title>Bruteforce Recon</title>
@@ -378,44 +385,70 @@ export default function Scanner() {
         <div className="absolute inset-0 bg-black/80 backdrop-blur-[1px]"/>
         <div className="relative z-10">
           {/* Header */}
-          <div className="border-b border-cyan-500/20 bg-black/60 backdrop-blur-xl sticky top-0 z-50 px-4 md:px-6 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="font-mono text-xs leading-tight border border-cyan-500/30 bg-black/60 px-3 py-1.5 rounded">
-                <div className="text-cyan-400">ENTER PASSWORD: <span className="text-green-400">*****</span></div><div className="text-red-500">ACCESS GRANTED</div><div className="text-white font-bold tracking-wider text-sm mt-0.5">BruteforceScannerR</div>
+          <div className="border-b border-cyan-500/20 bg-black/60 backdrop-blur-xl sticky top-0 z-50 px-3 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="font-mono text-[10px] sm:text-xs leading-tight border border-cyan-500/30 bg-black/60 px-2 sm:px-3 py-1 sm:py-1.5 rounded">
+                <div className="text-cyan-400">ENTER PASSWORD: <span className="text-green-400">*****</span></div>
+                <div className="text-red-500">ACCESS GRANTED</div>
+                <div className="text-white font-bold tracking-wider text-xs sm:text-sm mt-0.5">BruteforceScannerR</div>
               </div>
-              <div className="hidden md:block"><div className="font-black text-base tracking-wider text-cyan-400">BRUTEFORCE</div><div className="text-[9px] text-cyan-500/50 tracking-widest uppercase">Recon Framework v2</div></div>
-              {scanning && (<div className="flex items-center gap-2 ml-2 bg-cyan-500/10 border border-cyan-500/30 rounded-lg px-3 py-1"><div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"/><span className="text-xs text-cyan-400 font-mono tracking-widest">LIVE</span></div>)}
+              <div className="hidden sm:block">
+                <div className="font-black text-sm sm:text-base tracking-wider text-cyan-400">BRUTEFORCE</div>
+                <div className="text-[8px] sm:text-[9px] text-cyan-500/50 tracking-widest uppercase">Recon Framework v2</div>
+              </div>
+              {scanning && (
+                <div className="flex items-center gap-1 sm:gap-2 ml-1 sm:ml-2 bg-cyan-500/10 border border-cyan-500/30 rounded-lg px-2 sm:px-3 py-0.5 sm:py-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"/>
+                  <span className="text-[10px] sm:text-xs text-cyan-400 font-mono tracking-widest">LIVE</span>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-1">
               <div className="hidden md:flex gap-1">
-                {[["dashboard","📊 Dashboard"],["sni","📡 SNI"],["recon","🔍 Recon"],["proxy","🧪 Proxy"],["ssl","🔒 SSL"]].map(([t,l])=>(<button key={t} onClick={()=>setTab(t)} className={`px-4 py-1.5 rounded-lg text-xs tracking-wider transition-all ${tab===t?"bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 shadow-lg":"text-cyan-500/50 hover:text-cyan-400 hover:bg-cyan-500/5"}`}>{l}</button>))}
+                {[["dashboard","📊"],["sni","📡"],["recon","🔍"],["proxy","🧪"],["ssl","🔒"]].map(([t,l])=>(
+                  <button key={t} onClick={()=>setTab(t)} className={`px-2 sm:px-4 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs tracking-wider transition-all ${tab===t?"bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 shadow-lg":"text-cyan-500/50 hover:text-cyan-400 hover:bg-cyan-500/5"}`}>
+                    <span className="hidden sm:inline">{t==="dashboard"?"Dashboard":t.toUpperCase()}</span><span className="sm:hidden">{l}</span>
+                  </button>
+                ))}
               </div>
-              <div className="md:hidden"><select value={tab} onChange={e=>setTab(e.target.value)} className="bg-black/60 border border-cyan-500/30 rounded-lg px-3 py-1.5 text-xs text-cyan-400 focus:outline-none"><option value="dashboard">📊 Dashboard</option><option value="sni">📡 SNI</option><option value="recon">🔍 Recon</option><option value="proxy">🧪 Proxy</option><option value="ssl">🔒 SSL</option></select></div>
-              <button onClick={()=>setTheme(theme==='dark'?'light':'dark')} className="ml-2 p-2 rounded-lg bg-cyan-500/5 hover:bg-cyan-500/10 text-cyan-400/60 hover:text-cyan-400 transition">{theme==='dark'?<FiSun size={16}/>:<FiMoon size={16}/>}</button>
+              <div className="md:hidden">
+                <select value={tab} onChange={e=>setTab(e.target.value)} className="bg-black/60 border border-cyan-500/30 rounded-lg px-2 py-1 text-[10px] text-cyan-400 focus:outline-none">
+                  <option value="dashboard">📊</option><option value="sni">📡</option><option value="recon">🔍</option><option value="proxy">🧪</option><option value="ssl">🔒</option>
+                </select>
+              </div>
+              <button onClick={()=>setTheme(theme==='dark'?'light':'dark')} className="ml-1 sm:ml-2 p-1.5 sm:p-2 rounded-lg bg-cyan-500/5 hover:bg-cyan-500/10 text-cyan-400/60 hover:text-cyan-400 transition">
+                {theme==='dark'?<FiSun size={14}/>:<FiMoon size={14}/>}
+              </button>
             </div>
           </div>
           {scanning && <ProgressBar pct={tab==="sni"?(sniResults.length/Math.max(1,sniTotal)*100):reconProgress} color="cyan"/>}
-          <div className="max-w-screen-xl mx-auto px-4 md:px-6 py-6 space-y-5">
+          <div className="max-w-screen-xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 space-y-4 sm:space-y-5">
             
             {/* ==================== DASHBOARD TAB ==================== */}
             {tab === "dashboard" && (
               <div className="space-y-4">
                 <MetricsPanel aps={scanMetrics.aps} totalAttempts={scanMetrics.total} elapsed={scanMetrics.elapsed} />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <div className="bg-black/40 border border-cyan-500/20 rounded-2xl p-5 backdrop-blur-sm"><h3 className="text-sm font-bold text-cyan-400 mb-3">Live Attempts</h3><AttemptGraph dataPoints={graphData} /></div>
-                  <div className="bg-black/40 border border-cyan-500/20 rounded-2xl p-5 backdrop-blur-sm"><h3 className="text-sm font-bold text-cyan-400 mb-3">Terminal Log</h3><TerminalLog logs={terminalLogs} /></div>
+                  <div className="bg-black/40 border border-cyan-500/20 rounded-2xl p-4 sm:p-5 backdrop-blur-sm">
+                    <h3 className="text-sm font-bold text-cyan-400 mb-3">Live Attempts</h3>
+                    <AttemptGraph dataPoints={graphData} />
+                  </div>
+                  <div className="bg-black/40 border border-cyan-500/20 rounded-2xl p-4 sm:p-5 backdrop-blur-sm">
+                    <h3 className="text-sm font-bold text-cyan-400 mb-3">Terminal Log</h3>
+                    <TerminalLog logs={terminalLogs} />
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                   <StatCard label="SNI Scans" value={stats.sniScans} color="cyan" icon={<FiShield/>}/>
                   <StatCard label="Recon Scans" value={stats.reconScans} color="purple" icon={<FiGlobe/>}/>
                   <StatCard label="Proxies Found" value={stats.proxiesFound} color="green" icon={<FiZap/>}/>
                   <StatCard label="Last Scan" value={stats.lastScan ? new Date(stats.lastScan).toLocaleDateString() : "—"} color="yellow" icon={<FiActivity/>}/>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <button onClick={()=>setTab("sni")} className="p-4 bg-cyan-500/5 border border-cyan-500/20 rounded-xl hover:border-cyan-500/40"><FiShield className="text-cyan-400 text-xl mb-1"/><div className="font-bold text-sm">SNI Scanner</div></button>
-                  <button onClick={()=>setTab("recon")} className="p-4 bg-purple-500/5 border border-purple-500/20 rounded-xl hover:border-purple-500/40"><FiGlobe className="text-purple-400 text-xl mb-1"/><div className="font-bold text-sm">Recon</div></button>
-                  <button onClick={()=>setTab("proxy")} className="p-4 bg-green-500/5 border border-green-500/20 rounded-xl hover:border-green-500/40"><FiZap className="text-green-400 text-xl mb-1"/><div className="font-bold text-sm">Proxy Tester</div></button>
-                  <button onClick={()=>setTab("ssl")} className="p-4 bg-red-500/5 border border-red-500/20 rounded-xl hover:border-red-500/40"><FiActivity className="text-red-400 text-xl mb-1"/><div className="font-bold text-sm">SSL Scanner</div></button>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                  <button onClick={()=>setTab("sni")} className="p-3 sm:p-4 bg-cyan-500/5 border border-cyan-500/20 rounded-xl hover:border-cyan-500/40"><FiShield className="text-cyan-400 text-lg sm:text-xl mb-1"/><div className="font-bold text-xs sm:text-sm">SNI Scanner</div></button>
+                  <button onClick={()=>setTab("recon")} className="p-3 sm:p-4 bg-purple-500/5 border border-purple-500/20 rounded-xl hover:border-purple-500/40"><FiGlobe className="text-purple-400 text-lg sm:text-xl mb-1"/><div className="font-bold text-xs sm:text-sm">Recon</div></button>
+                  <button onClick={()=>setTab("proxy")} className="p-3 sm:p-4 bg-green-500/5 border border-green-500/20 rounded-xl hover:border-green-500/40"><FiZap className="text-green-400 text-lg sm:text-xl mb-1"/><div className="font-bold text-xs sm:text-sm">Proxy Tester</div></button>
+                  <button onClick={()=>setTab("ssl")} className="p-3 sm:p-4 bg-red-500/5 border border-red-500/20 rounded-xl hover:border-red-500/40"><FiActivity className="text-red-400 text-lg sm:text-xl mb-1"/><div className="font-bold text-xs sm:text-sm">SSL Scanner</div></button>
                 </div>
               </div>
             )}
@@ -425,11 +458,13 @@ export default function Scanner() {
               <>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                   <div className="lg:col-span-2 space-y-3">
-                    <div className="bg-black/40 border border-cyan-500/20 rounded-2xl p-5 backdrop-blur-sm">
+                    <div className="bg-black/40 border border-cyan-500/20 rounded-2xl p-4 sm:p-5 backdrop-blur-sm">
                       <div className="text-[10px] text-cyan-400/60 uppercase tracking-widest mb-3">Domain Preset</div>
                       <div className="flex flex-wrap gap-1.5 mb-4 max-h-40 overflow-y-auto">
                         {Object.entries(PRESET_GROUPS).map(([name,domains])=>(
-                          <button key={name} onClick={()=>{setSniPreset(name);setSniCustomText("");}} className={`px-3 py-1.5 rounded-lg text-xs transition ${sniPreset===name&&!sniCustomText?"bg-cyan-500/20 text-cyan-300 border border-cyan-500/40":"bg-cyan-500/5 text-cyan-400/60 border border-cyan-500/20 hover:bg-cyan-500/10"}`}>{name} <span className="text-cyan-400/40 ml-1">({domains.length})</span></button>
+                          <button key={name} onClick={()=>{setSniPreset(name);setSniCustomText("");}} className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs transition ${sniPreset===name&&!sniCustomText?"bg-cyan-500/20 text-cyan-300 border border-cyan-500/40":"bg-cyan-500/5 text-cyan-400/60 border border-cyan-500/20 hover:bg-cyan-500/10"}`}>
+                            {name} <span className="text-cyan-400/40 ml-1">({domains.length})</span>
+                          </button>
                         ))}
                       </div>
                       {!sniCustomText && (
@@ -438,13 +473,16 @@ export default function Scanner() {
                           <div className="flex flex-wrap gap-1">{(PRESET_GROUPS[sniPreset]||[]).map(d=><span key={d} className="text-[10px] font-mono text-cyan-400/60 bg-cyan-500/10 px-1.5 py-0.5 rounded">{d}</span>)}</div>
                         </div>
                       )}
-                      <div className="mb-4"><div className="text-[10px] text-cyan-400/60 uppercase mb-1.5">Or paste custom list</div><textarea value={sniCustomText} onChange={e=>setSniCustomText(e.target.value)} rows={3} placeholder={"moya.app\nnofunds.mtn.co.za\n..."} className="w-full bg-black/60 border border-cyan-500/30 rounded-xl px-4 py-3 text-xs font-mono text-cyan-300 placeholder-cyan-500/30 focus:outline-none focus:border-cyan-500/60 resize-none"/></div>
-                      <button onClick={launchSNI} disabled={sniStatus==="running"} className="w-full py-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold tracking-wider text-sm transition disabled:opacity-30 shadow-[0_0_20px_#00ffff40]">{sniStatus==="running"?"⟳ TESTING SNIs...":"▶ BRUTEFORCE SNI"}</button>
+                      <div className="mb-4">
+                        <div className="text-[10px] text-cyan-400/60 uppercase mb-1.5">Or paste custom list</div>
+                        <textarea value={sniCustomText} onChange={e=>setSniCustomText(e.target.value)} rows={3} placeholder={"moya.app\nnofunds.mtn.co.za\n..."} className="w-full bg-black/60 border border-cyan-500/30 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-xs font-mono text-cyan-300 placeholder-cyan-500/30 focus:outline-none focus:border-cyan-500/60 resize-none"/>
+                      </div>
+                      <button onClick={launchSNI} disabled={sniStatus==="running"} className="w-full py-2 sm:py-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold tracking-wider text-xs sm:text-sm transition disabled:opacity-30 shadow-[0_0_20px_#00ffff40]">{sniStatus==="running"?"⟳ TESTING SNIs...":"▶ BRUTEFORCE SNI"}</button>
                       {sniError && <div className="text-xs text-red-400 mt-2">{sniError}</div>}
                     </div>
                   </div>
                   <div className="space-y-3">
-                    <div className="bg-black/40 border border-cyan-500/20 rounded-2xl p-5 backdrop-blur-sm">
+                    <div className="bg-black/40 border border-cyan-500/20 rounded-2xl p-4 sm:p-5 backdrop-blur-sm">
                       <div className="text-[10px] text-cyan-400/60 uppercase tracking-widest mb-3">Options</div>
                       <div className="space-y-3">
                         <div><label className="text-[10px] text-cyan-400/60 block mb-1">Target IP (optional)</label><input value={sniTargetIP} onChange={e=>setSniTargetIP(e.target.value)} placeholder="Auto-resolve" className="w-full bg-black/60 border border-cyan-500/30 rounded-lg px-3 py-2 text-xs text-cyan-300 focus:border-cyan-500/60"/></div>
@@ -457,25 +495,31 @@ export default function Scanner() {
                 </div>
                 {sniDisplayed.length>0&&(
                   <div className="bg-black/40 border border-cyan-500/20 rounded-2xl overflow-hidden backdrop-blur-sm">
-                    <div className="px-4 py-3 border-b border-cyan-500/20 flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-3"><span className="text-cyan-400 font-mono text-sm font-bold">{sniDisplayed.length} WORKING SNI HOSTS</span><input value={sniFilter} onChange={e=>setSniFilter(e.target.value)} placeholder="filter..." className="bg-black/60 border border-cyan-500/30 rounded-lg px-3 py-1 text-xs text-cyan-300 w-40"/></div>
-                      <div className="flex gap-2"><button className="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-lg text-xs text-cyan-400 transition">⬇ CSV</button></div>
+                    <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-cyan-500/20 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <span className="text-cyan-400 font-mono text-xs sm:text-sm font-bold">{sniDisplayed.length} WORKING</span>
+                        <input value={sniFilter} onChange={e=>setSniFilter(e.target.value)} placeholder="filter..." className="bg-black/60 border border-cyan-500/30 rounded-lg px-2 sm:px-3 py-1 text-xs text-cyan-300 w-32 sm:w-40"/>
+                      </div>
+                      <div className="flex gap-2"><button className="px-2 sm:px-3 py-1 sm:py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-lg text-xs text-cyan-400 transition">⬇ CSV</button></div>
                     </div>
                     <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead><tr className="text-[9px] text-cyan-400/60 uppercase tracking-widest border-b border-cyan-500/20"><th className="w-4 pl-4"/><SortableHeader field="sni" currentField={sniSortField} setField={setSniSortField} asc={sniSortAsc} setAsc={setSniSortAsc}>SNI Host</SortableHeader><th className="px-3 py-2 text-left">IP:Port</th><SortableHeader field="http" currentField={sniSortField} setField={setSniSortField} asc={sniSortAsc} setAsc={setSniSortAsc}>Status</SortableHeader><th className="px-3 py-2 text-left">Title</th><th className="px-3 py-2 text-left">Country</th><th className="px-3 py-2 text-left">Time</th><th className="px-3 py-2 text-left">Result</th><th className="w-4"/></tr></thead>
+                      <table className="w-full text-xs">
+                        <thead><tr className="text-[9px] sm:text-[10px] text-cyan-400/60 uppercase tracking-widest border-b border-cyan-500/20"><th className="w-4 pl-2 sm:pl-4"/><SortableHeader field="sni" currentField={sniSortField} setField={setSniSortField} asc={sniSortAsc} setAsc={setSniSortAsc}>SNI Host</SortableHeader><th className="px-2 sm:px-3 py-2 text-left">IP:Port</th><SortableHeader field="http" currentField={sniSortField} setField={setSniSortField} asc={sniSortAsc} setAsc={setSniSortAsc}>Status</SortableHeader><th className="px-2 sm:px-3 py-2 text-left">Title</th><th className="px-2 sm:px-3 py-2 text-left">Country</th><th className="px-2 sm:px-3 py-2 text-left">Time</th><th className="px-2 sm:px-3 py-2 text-left">Result</th><th className="w-4"/></tr></thead>
                         <tbody>
                           {sniStatus==="running" && sniResults.length===0 ? Array.from({length:5}).map((_,i)=><SkeletonRow key={i}/>) : sniDisplayed.map((r,i)=>(
-                            <tr key={r.sni+i} className="border-b border-cyan-500/10 hover:bg-cyan-500/5 transition text-xs group">
-                              <td className="pl-4 py-2.5"><div className="w-2 h-2 rounded-full bg-green-400 shadow-[0_0_8px_#00ff00]"/></td>
-                              <td className="px-3 py-2.5 font-mono text-cyan-300 flex items-center gap-2"><span className="truncate max-w-[150px]">{r.sni}</span><button onClick={()=>copyToClipboard(r.sni,'SNI copied')} className="opacity-0 group-hover:opacity-100 transition"><FiCopy size={12} className="text-cyan-400/60 hover:text-cyan-400"/></button></td>
-                              <td className="px-3 py-2.5 font-mono text-cyan-400/60">{r.ip}:{r.port}</td>
-                              <td className="px-3 py-2.5">{r.http?.status?<span className={r.http.status<300?"text-green-400":"text-yellow-400"}>{r.http.status}</span>:"—"}</td>
-                              <td className="px-3 py-2.5 text-cyan-400/60 max-w-[160px] truncate">{r.http?.title||"—"}</td>
-                              <td className="px-3 py-2.5 text-cyan-400/60">{FLAGS[r.geo?.country]||"🌍"} {r.geo?.country||"—"}</td>
-                              <td className="px-3 py-2.5 font-mono text-cyan-400/40 text-[10px]">{new Date(r.timestamp).toLocaleTimeString()}</td>
-                              <td className="px-3 py-2.5"><Chip color="green" glow>✓ SNI OK</Chip></td>
-                              <td className="px-2 py-2.5"/>
+                            <tr key={r.sni+i} className="border-b border-cyan-500/10 hover:bg-cyan-500/5 transition group">
+                              <td className="pl-2 sm:pl-4 py-2"><div className="w-2 h-2 rounded-full bg-green-400 shadow-[0_0_8px_#00ff00]"/></td>
+                              <td className="px-2 sm:px-3 py-2 font-mono text-cyan-300 flex items-center gap-1 sm:gap-2">
+                                <span className="truncate max-w-[100px] sm:max-w-[150px]">{r.sni}</span>
+                                <button onClick={()=>copyToClipboard(r.sni,'SNI copied')} className="opacity-0 group-hover:opacity-100 transition"><FiCopy size={12} className="text-cyan-400/60 hover:text-cyan-400"/></button>
+                              </td>
+                              <td className="px-2 sm:px-3 py-2 font-mono text-cyan-400/60">{r.ip}:{r.port}</td>
+                              <td className="px-2 sm:px-3 py-2">{r.http?.status?<span className={r.http.status<300?"text-green-400":"text-yellow-400"}>{r.http.status}</span>:"—"}</td>
+                              <td className="px-2 sm:px-3 py-2 text-cyan-400/60 max-w-[120px] sm:max-w-[160px] truncate">{r.http?.title||"—"}</td>
+                              <td className="px-2 sm:px-3 py-2 text-cyan-400/60">{FLAGS[r.geo?.country]||"🌍"} {r.geo?.country||"—"}</td>
+                              <td className="px-2 sm:px-3 py-2 font-mono text-cyan-400/40 text-[10px]">{new Date(r.timestamp).toLocaleTimeString()}</td>
+                              <td className="px-2 sm:px-3 py-2"><Chip color="green" glow>✓</Chip></td>
+                              <td className="px-1 sm:px-2 py-2"/>
                             </tr>
                           ))}
                         </tbody>
@@ -490,41 +534,47 @@ export default function Scanner() {
             {tab === "recon" && (
               <>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  <div className="lg:col-span-2 bg-black/40 border border-cyan-500/20 rounded-2xl p-5 backdrop-blur-sm">
+                  <div className="lg:col-span-2 bg-black/40 border border-cyan-500/20 rounded-2xl p-4 sm:p-5 backdrop-blur-sm">
                     <div className="text-[10px] text-cyan-400/60 uppercase tracking-widest mb-3">Target Domains</div>
-                    <textarea value={reconDomains} onChange={e=>setReconDomains(e.target.value)} rows={4} placeholder="mtn.co.za&#10;vodacom.co.za&#10;moya.app" className="w-full bg-black/60 border border-cyan-500/30 rounded-xl px-4 py-3 text-xs font-mono text-cyan-300 placeholder-cyan-500/30 focus:border-cyan-500/60 resize-none mb-4"/>
-                    <button onClick={launchRecon} disabled={reconStatus==="running"} className="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold tracking-wider text-sm transition disabled:opacity-30 shadow-[0_0_20px_#a855f740]">{reconStatus==="running"?"⟳ SCANNING...":"▶ LAUNCH RECON"}</button>
+                    <textarea value={reconDomains} onChange={e=>setReconDomains(e.target.value)} rows={4} placeholder="mtn.co.za&#10;vodacom.co.za&#10;moya.app" className="w-full bg-black/60 border border-cyan-500/30 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-xs font-mono text-cyan-300 placeholder-cyan-500/30 focus:border-cyan-500/60 resize-none mb-4"/>
+                    <button onClick={launchRecon} disabled={reconStatus==="running"} className="w-full py-2 sm:py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold tracking-wider text-xs sm:text-sm transition disabled:opacity-30 shadow-[0_0_20px_#a855f740]">{reconStatus==="running"?"⟳ SCANNING...":"▶ LAUNCH RECON"}</button>
                     {reconError && <div className="text-xs text-red-400 mt-2">{reconError}</div>}
                   </div>
-                  <div className="bg-black/40 border border-cyan-500/20 rounded-2xl p-5 backdrop-blur-sm">
+                  <div className="bg-black/40 border border-cyan-500/20 rounded-2xl p-4 sm:p-5 backdrop-blur-sm">
                     <div className="text-[10px] text-cyan-400/60 uppercase tracking-widest mb-3">Port Profile</div>
-                    <div className="grid grid-cols-2 gap-2 mb-3">{Object.keys(PORT_PROFILES).map(k=>(<button key={k} onClick={()=>setReconProfile(k)} className={`py-2 rounded-lg text-xs uppercase transition ${reconProfile===k?"bg-cyan-500/20 text-cyan-300 border border-cyan-500/40":"bg-cyan-500/5 text-cyan-400/60 border border-cyan-500/20 hover:bg-cyan-500/10"}`}>{k}</button>))}</div>
+                    <div className="grid grid-cols-2 gap-2 mb-3">{Object.keys(PORT_PROFILES).map(k=>(<button key={k} onClick={()=>setReconProfile(k)} className={`py-2 rounded-lg text-[10px] sm:text-xs uppercase transition ${reconProfile===k?"bg-cyan-500/20 text-cyan-300 border border-cyan-500/40":"bg-cyan-500/5 text-cyan-400/60 border border-cyan-500/20 hover:bg-cyan-500/10"}`}>{k}</button>))}</div>
                     <div className="text-[10px] text-cyan-400/40 font-mono">{PORT_PROFILES[reconProfile]}</div>
                   </div>
                 </div>
-                {reconLive.length>0&&(<div className="grid grid-cols-2 sm:grid-cols-5 gap-3"><StatCard label="Live" value={reconLive.length} color="cyan"/><StatCard label="Highlights" value={reconLive.filter(r=>r.highlight).length} color="red"/><StatCard label="Proxies" value={reconLive.filter(r=>r.proxy_ok).length} color="green"/><StatCard label="Titled" value={reconLive.filter(r=>r.http?.title).length} color="purple"/><StatCard label="GeoMapped" value={reconLive.filter(r=>r.geo?.country).length} color="cyan"/></div>)}
+                {reconLive.length>0&&(<div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3"><StatCard label="Live" value={reconLive.length} color="cyan"/><StatCard label="Highlights" value={reconLive.filter(r=>r.highlight).length} color="red"/><StatCard label="Proxies" value={reconLive.filter(r=>r.proxy_ok).length} color="green"/><StatCard label="Titled" value={reconLive.filter(r=>r.http?.title).length} color="purple"/><StatCard label="GeoMapped" value={reconLive.filter(r=>r.geo?.country).length} color="cyan"/></div>)}
                 {reconDisplayed.length>0&&(
                   <div className="bg-black/40 border border-cyan-500/20 rounded-2xl overflow-hidden backdrop-blur-sm">
-                    <div className="px-4 py-3 border-b border-cyan-500/20 flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2"><input value={reconFilter} onChange={e=>setReconFilter(e.target.value)} placeholder="filter results..." className="bg-black/60 border border-cyan-500/30 rounded-lg px-3 py-1 text-xs text-cyan-300 w-48"/><button onClick={()=>setShowHighlights(v=>!v)} className={`px-3 py-1 rounded-lg text-xs transition ${showHighlights?"bg-red-500/20 text-red-300 border-red-500/40":"bg-cyan-500/5 text-cyan-400/60 border border-cyan-500/20"}`}>🔴 Highlights</button></div>
-                      <button className="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-lg text-xs text-cyan-400">⬇ CSV</button>
+                    <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-cyan-500/20 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <input value={reconFilter} onChange={e=>setReconFilter(e.target.value)} placeholder="filter results..." className="bg-black/60 border border-cyan-500/30 rounded-lg px-2 sm:px-3 py-1 text-xs text-cyan-300 w-40 sm:w-48"/>
+                        <button onClick={()=>setShowHighlights(v=>!v)} className={`px-2 sm:px-3 py-1 rounded-lg text-[10px] sm:text-xs transition ${showHighlights?"bg-red-500/20 text-red-300 border-red-500/40":"bg-cyan-500/5 text-cyan-400/60 border border-cyan-500/20"}`}>🔴 Highlights</button>
+                      </div>
+                      <button className="px-2 sm:px-3 py-1 sm:py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-lg text-xs text-cyan-400">⬇ CSV</button>
                     </div>
                     <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead><tr className="text-[9px] text-cyan-400/60 uppercase tracking-widest border-b border-cyan-500/20"><th className="w-3 pl-3"/><SortableHeader field="score" currentField={reconSortField} setField={setReconSortField} asc={reconSortAsc} setAsc={setReconSortAsc}>Score</SortableHeader><SortableHeader field="domain" currentField={reconSortField} setField={setReconSortField} asc={reconSortAsc} setAsc={setReconSortAsc}>Domain</SortableHeader><th className="px-3 py-2 text-left">IP</th><th className="px-3 py-2 text-left">Ports</th><th className="px-3 py-2 text-left">Proxy</th><th className="px-3 py-2 text-left">Title</th><th className="px-3 py-2 text-left">Geo</th><th className="px-3 py-2 text-left">HTTP</th><th className="w-4"/></tr></thead>
+                      <table className="w-full text-xs">
+                        <thead><tr className="text-[9px] sm:text-[10px] text-cyan-400/60 uppercase tracking-widest border-b border-cyan-500/20"><th className="w-3 pl-2 sm:pl-3"/><SortableHeader field="score" currentField={reconSortField} setField={setReconSortField} asc={reconSortAsc} setAsc={setReconSortAsc}>Score</SortableHeader><SortableHeader field="domain" currentField={reconSortField} setField={setReconSortField} asc={reconSortAsc} setAsc={setReconSortAsc}>Domain</SortableHeader><th className="px-2 sm:px-3 py-2 text-left">IP</th><th className="px-2 sm:px-3 py-2 text-left">Ports</th><th className="px-2 sm:px-3 py-2 text-left">Proxy</th><th className="px-2 sm:px-3 py-2 text-left">Title</th><th className="px-2 sm:px-3 py-2 text-left">Geo</th><th className="px-2 sm:px-3 py-2 text-left">HTTP</th><th className="w-4"/></tr></thead>
                         <tbody>
                           {reconStatus==="running" && reconResults.length===0 ? Array.from({length:3}).map((_,i)=><SkeletonRow key={i}/>) : reconDisplayed.map((r,i)=>(
-                            <tr key={r.domain+i} className="border-b border-cyan-500/10 hover:bg-cyan-500/5 transition text-xs group">
-                              <td className="pl-3 py-2.5"><div className={`w-1.5 h-1.5 rounded-full ${r.highlight?"bg-red-400 shadow-[0_0_6px_#ff3333]":"bg-cyan-400/40"}`}/></td>
-                              <td className="px-3 py-2.5"><ScoreDot score={r.score}/></td>
-                              <td className="px-3 py-2.5 font-mono text-cyan-300 flex items-center gap-2"><span className="truncate max-w-[150px]">{r.domain}</span><button onClick={()=>copyToClipboard(r.domain,'Domain copied')} className="opacity-0 group-hover:opacity-100 transition"><FiCopy size={12} className="text-cyan-400/60 hover:text-cyan-400"/></button></td>
-                              <td className="px-3 py-2.5 font-mono text-cyan-400/60">{(r.ips||[])[0]||"—"}</td>
-                              <td className="px-3 py-2.5"><div className="flex gap-1 flex-wrap">{(r.open_ports||[]).map(p=><RiskBadge key={p} port={p}/>)}</div></td>
-                              <td className="px-3 py-2.5">{r.proxy_ok?<Chip color="green" glow>⚡ PROXY</Chip>:<span className="text-cyan-400/20">—</span>}</td>
-                              <td className="px-3 py-2.5 text-cyan-400/60 max-w-[160px] truncate">{r.http?.title||"—"}</td>
-                              <td className="px-3 py-2.5 text-cyan-400/60">{FLAGS[r.geo?.country]||"🌍"} {r.geo?.city||r.geo?.country||"—"}</td>
-                              <td className="px-3 py-2.5">{r.http?.status?<span className={r.http.status<300?"text-green-400":"text-yellow-400"}>{r.http.status}</span>:"—"}</td>
-                              <td className="px-2"/>
+                            <tr key={r.domain+i} className="border-b border-cyan-500/10 hover:bg-cyan-500/5 transition group">
+                              <td className="pl-2 sm:pl-3 py-2"><div className={`w-1.5 h-1.5 rounded-full ${r.highlight?"bg-red-400 shadow-[0_0_6px_#ff3333]":"bg-cyan-400/40"}`}/></td>
+                              <td className="px-2 sm:px-3 py-2"><ScoreDot score={r.score}/></td>
+                              <td className="px-2 sm:px-3 py-2 font-mono text-cyan-300 flex items-center gap-1 sm:gap-2">
+                                <span className="truncate max-w-[100px] sm:max-w-[150px]">{r.domain}</span>
+                                <button onClick={()=>copyToClipboard(r.domain,'Domain copied')} className="opacity-0 group-hover:opacity-100 transition"><FiCopy size={12} className="text-cyan-400/60 hover:text-cyan-400"/></button>
+                              </td>
+                              <td className="px-2 sm:px-3 py-2 font-mono text-cyan-400/60">{(r.ips||[])[0]||"—"}</td>
+                              <td className="px-2 sm:px-3 py-2"><div className="flex gap-1 flex-wrap">{(r.open_ports||[]).map(p=><RiskBadge key={p} port={p}/>)}</div></td>
+                              <td className="px-2 sm:px-3 py-2">{r.proxy_ok?<Chip color="green" glow>⚡</Chip>:<span className="text-cyan-400/20">—</span>}</td>
+                              <td className="px-2 sm:px-3 py-2 text-cyan-400/60 max-w-[120px] sm:max-w-[160px] truncate">{r.http?.title||"—"}</td>
+                              <td className="px-2 sm:px-3 py-2 text-cyan-400/60">{FLAGS[r.geo?.country]||"🌍"} {r.geo?.city||r.geo?.country||"—"}</td>
+                              <td className="px-2 sm:px-3 py-2">{r.http?.status?<span className={r.http.status<300?"text-green-400":"text-yellow-400"}>{r.http.status}</span>:"—"}</td>
+                              <td className="px-1 sm:px-2"/>
                             </tr>
                           ))}
                         </tbody>
@@ -538,17 +588,17 @@ export default function Scanner() {
             {/* ==================== PROXY TAB ==================== */}
             {tab === "proxy" && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="bg-black/40 border border-cyan-500/20 rounded-2xl p-5 backdrop-blur-sm">
+                <div className="bg-black/40 border border-cyan-500/20 rounded-2xl p-4 sm:p-5 backdrop-blur-sm">
                   <div className="text-[10px] text-cyan-400/60 uppercase tracking-widest mb-3">Proxy Tester (Multi‑Port)</div>
                   <div className="space-y-3">
                     <div><label className="text-[10px] text-cyan-400/60 block mb-1">Proxy Host</label><input value={proxyHost} onChange={e=>setProxyHost(e.target.value)} placeholder="e.g., api.vodacom.co.za" className="w-full bg-black/60 border border-cyan-500/30 rounded-lg px-3 py-2 text-xs text-cyan-300"/></div>
                     <div><label className="text-[10px] text-cyan-400/60 block mb-1">Ports (comma‑separated)</label><input value={proxyPort} onChange={e=>setProxyPort(e.target.value)} placeholder="3128,8888,9090,1080,8118" className="w-full bg-black/60 border border-cyan-500/30 rounded-lg px-3 py-2 text-xs text-cyan-300"/></div>
                     <div><label className="text-[10px] text-cyan-400/60 block mb-1">Target URL</label><input value={proxyTarget} onChange={e=>setProxyTarget(e.target.value)} className="w-full bg-black/60 border border-cyan-500/30 rounded-lg px-3 py-2 text-xs text-cyan-300"/></div>
-                    <button onClick={testProxy} disabled={proxyLoading} className="w-full py-3 rounded-xl bg-green-600 hover:bg-green-500 text-white font-bold tracking-wider text-sm transition disabled:opacity-30 shadow-[0_0_20px_#10b98140]">{proxyLoading?"TESTING...":"▶ TEST ALL PORTS"}</button>
+                    <button onClick={testProxy} disabled={proxyLoading} className="w-full py-2 sm:py-3 rounded-xl bg-green-600 hover:bg-green-500 text-white font-bold tracking-wider text-xs sm:text-sm transition disabled:opacity-30 shadow-[0_0_20px_#10b98140]">{proxyLoading?"TESTING...":"▶ TEST ALL PORTS"}</button>
                   </div>
                   {proxyResult&&(<div className="mt-4 space-y-2 max-h-80 overflow-y-auto"><div className="text-xs text-cyan-400/60">Results for {proxyResult.host}:</div>{proxyResult.results?.map((r,i)=>(<div key={i} className={`p-3 rounded-lg border ${r.success?'bg-green-500/10 border-green-500/30':'bg-red-500/10 border-red-500/30'}`}><div className="flex items-center gap-2"><span className={`w-2 h-2 rounded-full ${r.success?'bg-green-400':'bg-red-400'}`}/><span className="text-xs font-mono text-cyan-300">Port {r.port}</span>{r.status&&<span className="text-[10px] text-cyan-400/40">({r.status})</span>}</div>{r.success&&r.data?<pre className="text-green-300 text-[10px] mt-1 overflow-x-auto">{JSON.stringify(r.data,null,2)}</pre>:<div className="text-[10px] text-red-300 mt-1">{r.error||'Failed'}</div>}</div>))||<div className="text-red-300">{proxyResult.error}</div>}</div>)}
                 </div>
-                <div className="bg-black/40 border border-cyan-500/20 rounded-2xl p-5 backdrop-blur-sm">
+                <div className="bg-black/40 border border-cyan-500/20 rounded-2xl p-4 sm:p-5 backdrop-blur-sm">
                   <div className="text-[10px] text-cyan-400/60 uppercase tracking-widest mb-3">How to Use</div>
                   <ol className="text-xs text-cyan-400/60 space-y-2 list-decimal list-inside"><li>Enter proxy host from Recon results.</li><li>Specify ports to test.</li><li>Click "Test All Ports".</li><li className="text-yellow-400/60">⚠️ Only test on authorized networks.</li></ol>
                 </div>
@@ -558,15 +608,15 @@ export default function Scanner() {
             {/* ==================== SSL TAB ==================== */}
             {tab === "ssl" && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="bg-black/40 border border-cyan-500/20 rounded-2xl p-5 backdrop-blur-sm">
+                <div className="bg-black/40 border border-cyan-500/20 rounded-2xl p-4 sm:p-5 backdrop-blur-sm">
                   <div className="text-[10px] text-cyan-400/60 uppercase tracking-widest mb-3">SSL Certificate Scanner</div>
                   <div className="space-y-3">
                     <div><label className="text-[10px] text-cyan-400/60 block mb-1">Domain</label><input value={sslDomain} onChange={e=>setSslDomain(e.target.value)} placeholder="e.g., arenaplus.co.za" className="w-full bg-black/60 border border-cyan-500/30 rounded-lg px-3 py-2 text-xs text-cyan-300"/></div>
-                    <button onClick={scanSSL} disabled={sslLoading} className="w-full py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold tracking-wider text-sm transition disabled:opacity-30 shadow-[0_0_20px_#ef444440]">{sslLoading?"SCANNING...":"▶ SCAN SSL"}</button>
+                    <button onClick={scanSSL} disabled={sslLoading} className="w-full py-2 sm:py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold tracking-wider text-xs sm:text-sm transition disabled:opacity-30 shadow-[0_0_20px_#ef444440]">{sslLoading?"SCANNING...":"▶ SCAN SSL"}</button>
                   </div>
                   {sslResult&&(<div className={`mt-4 p-4 rounded-xl border ${sslResult.success?'bg-green-500/10 border-green-500/30':'bg-red-500/10 border-red-500/30'}`}>{sslResult.success?<><div className="text-xs text-cyan-300"><span className="text-cyan-400/60">Domain:</span> {sslResult.domain}</div><div className="text-xs mt-1 text-cyan-300"><span className="text-cyan-400/60">Issuer:</span> {sslResult.issuer}</div><div className="text-xs mt-1 text-cyan-300"><span className="text-cyan-400/60">Subject CN:</span> {sslResult.subjectCN}</div><div className="text-xs mt-1 text-cyan-300"><span className="text-cyan-400/60">Valid:</span> {sslResult.validFrom} → {sslResult.validTo}</div>{sslResult.daysRemaining!==null&&<div className="text-xs mt-1"><span className="text-cyan-400/60">Days left:</span> <span className={sslResult.daysRemaining<30?"text-red-400":sslResult.daysRemaining<90?"text-yellow-400":"text-green-400"}>{sslResult.daysRemaining}</span></div>}</>:<div className="text-xs text-red-300">{sslResult.error}</div>}</div>)}
                 </div>
-                <div className="bg-black/40 border border-cyan-500/20 rounded-2xl p-5 backdrop-blur-sm">
+                <div className="bg-black/40 border border-cyan-500/20 rounded-2xl p-4 sm:p-5 backdrop-blur-sm">
                   <div className="text-[10px] text-cyan-400/60 uppercase tracking-widest mb-3">Certificate Details</div>
                   <p className="text-xs text-cyan-400/60">Enter a domain to check its SSL certificate validity, issuer, and expiration.</p>
                 </div>
