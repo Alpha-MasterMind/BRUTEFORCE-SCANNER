@@ -5,7 +5,8 @@ import toast from 'react-hot-toast';
 import { FiCopy, FiMoon, FiSun, FiChevronDown, FiChevronUp, FiShield, FiGlobe, FiZap, FiActivity } from 'react-icons/fi';
 import { useTheme } from 'next-themes';
 import dynamic from 'next/dynamic';
-const Lottie = dynamic(() => import('lottie-react'), { ssr: false }); 
+
+const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
 
 // ==================== LOTTIE SPLASH SEGMENTS ====================
 const SPLASH_SEGMENTS = [
@@ -311,8 +312,19 @@ export default function Scanner() {
   if (!splashComplete) {
     return (
       <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
-        <Lottie lottieRef={lottieRef} animationData="/animations/bruteforce_master.json" loop={false} autoplay={true} initialSegment={SPLASH_SEGMENTS[0]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        <div className="absolute bottom-8 text-cyan-400 text-xs tracking-widest">BruteforceScannerR</div>
+        {mounted && (
+          <Lottie
+            lottieRef={lottieRef}
+            animationData="/animations/bruteforce_master.json"
+            loop={false}
+            autoplay={true}
+            initialSegment={SPLASH_SEGMENTS[0]}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        )}
+        <div className="absolute bottom-8 text-cyan-400 text-xs tracking-widest">
+          BruteforceScannerR
+        </div>
       </div>
     );
   }
@@ -320,8 +332,12 @@ export default function Scanner() {
   // Main App
   return (
     <>
-      <Head><link rel="icon" type="image/png" href="/logo.png"/><link rel="apple-touch-icon" href="/logo.png"/><title>Bruteforce Recon</title></Head>
-      <div className="min-h-screen text-white font-mono text-sm relative" style={{ backgroundImage: "url('/background.jpg')", backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+      <Head>
+        <link rel="icon" type="image/jpeg" href="/logo.jpeg" />
+        <link rel="apple-touch-icon" href="/logo.jpeg" />
+        <title>Bruteforce Recon</title>
+      </Head>
+      <div className="min-h-screen text-white font-mono text-sm relative" style={{ backgroundImage: "url('/background.png')", backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
         <div className="absolute inset-0 bg-black/80 backdrop-blur-[1px]"/>
         <div className="relative z-10">
           {/* Header */}
