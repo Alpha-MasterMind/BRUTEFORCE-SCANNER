@@ -4,17 +4,6 @@ import Head from 'next/head';
 import toast from 'react-hot-toast';
 import { FiCopy, FiMoon, FiSun, FiChevronDown, FiChevronUp, FiShield, FiGlobe, FiZap, FiActivity } from 'react-icons/fi';
 import { useTheme } from 'next-themes';
-import dynamic from 'next/dynamic';
-
-const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
-
-// ==================== LOTTIE SPLASH SEGMENTS ====================
-const SPLASH_SEGMENTS = [
-  [0, 120],
-  [121, 260],
-  [261, 360],
-  [360, 600],
-];
 
 // ==================== EXPANDED ZERO-RATED DOMAINS ====================
 const MTN_DOMAINS = [ "mtn.co.za", "www.mtn.co.za", "nofunds.mtn.co.za", "onlinecms.mtn.co.za", "dev.onlinecms.mtn.co.za", "myaccount.mtn.co.za", "selfservice.mtn.co.za", "myconnect.mtn.co.za", "portal.mtn.co.za", "business.mtn.co.za", "api.mtn.co.za" ];
@@ -46,7 +35,7 @@ function StatCard({ label, value, color="cyan", icon, sub }) { const cols = { re
 function ProgressBar({ pct, color="cyan" }) { const c = color==="green"?"from-green-500 to-emerald-400":"from-cyan-500 to-blue-500"; return (<div className="w-full h-0.5 bg-cyan-500/10"><div className={`h-full bg-gradient-to-r ${c} transition-all duration-500`} style={{width:`${pct}%`}}/></div>); }
 function SkeletonRow() { return (<tr className="animate-pulse"><td className="pl-3 py-2.5"><div className="w-1.5 h-1.5 rounded-full bg-cyan-500/20"/></td><td className="px-3 py-2.5"><div className="h-3 bg-cyan-500/20 rounded w-12"/></td><td className="px-3 py-2.5"><div className="h-3 bg-cyan-500/20 rounded w-32"/></td><td className="px-3 py-2.5"><div className="h-3 bg-cyan-500/20 rounded w-20"/></td><td className="px-3 py-2.5"><div className="h-3 bg-cyan-500/20 rounded w-16"/></td><td className="px-3 py-2.5"><div className="h-3 bg-cyan-500/20 rounded w-10"/></td><td className="px-3 py-2.5"><div className="h-3 bg-cyan-500/20 rounded w-24"/></td><td className="px-3 py-2.5"><div className="h-3 bg-cyan-500/20 rounded w-10"/></td><td className="px-3 py-2.5"><div className="h-3 bg-cyan-500/20 rounded w-8"/></td><td className="px-2 py-2.5"><div className="w-3 h-3 bg-cyan-500/20 rounded"/></td></tr>); }
 
-// ==================== METRICS PANEL ====================
+// ==================== METRICS PANEL (SAFE) ====================
 function MetricsPanel({ aps, totalAttempts, elapsed }) {
   return (
     <div className="bg-black/75 border border-[#00ff66] rounded p-4 shadow-[0_0_12px_#00ff6640] col-span-12 flex justify-between">
@@ -57,30 +46,40 @@ function MetricsPanel({ aps, totalAttempts, elapsed }) {
   );
 }
 
-// ==================== TERMINAL LOG ====================
+// ==================== TERMINAL LOG (GUARDED) ====================
 function TerminalLog({ logs }) {
   const endRef = useRef(null);
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [logs]);
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => { setIsClient(true); }, []);
+  useEffect(() => { if (isClient) endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [logs, isClient]);
+  if (!isClient) return <div className="bg-black/75 border border-[#00ff66] rounded p-4 h-48">Loading terminal...</div>;
   return (
     <div className="bg-black/75 border border-[#00ff66] rounded p-4 h-48 overflow-y-auto font-mono text-sm">
-      {logs.map((log, i) => <div key={i} className="text-[#00ff66] animate-slideIn">{log}</div>)}
+      {logs.map((log, i) => <div key={`log-${i}`} className="text-[#00ff66] animate-slideIn">{log}</div>)}
       <div ref={endRef} />
     </div>
   );
 }
 
-// ==================== ATTEMPT GRAPH ====================
+// ==================== ATTEMPT GRAPH (GUARDED) ====================
 function AttemptGraph({ dataPoints }) {
   const canvasRef = useRef();
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => { setIsClient(true); }, []);
   useEffect(() => {
-    const ctx = canvasRef.current.getContext('2d');
+    if (!isClient) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     ctx.clearRect(0, 0, 800, 200);
     ctx.strokeStyle = '#00ff66';
     ctx.lineWidth = 2;
     ctx.beginPath();
     dataPoints.forEach((v, i) => { const x = i * 15; const y = 200 - (v / 100) * 200; i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); });
     ctx.stroke();
-  }, [dataPoints]);
+  }, [dataPoints, isClient]);
+  if (!isClient) return <div className="bg-black/75 border border-[#00ff66] rounded p-4 h-48">Loading graph...</div>;
   return <canvas ref={canvasRef} width={800} height={200} className="w-full h-full" />;
 }
 
@@ -90,8 +89,6 @@ export default function Scanner() {
   const [tab, setTab] = useState("dashboard");
   const [mounted, setMounted] = useState(false);
   const [splashComplete, setSplashComplete] = useState(false);
-  const lottieRef = useRef();
-  const segmentIndex = useRef(0);
 
   const [stats, setStats] = useState({ sniScans: 0, reconScans: 0, proxiesFound: 0, lastScan: null });
   const [sniPreset, setSniPreset] = useState("🇿🇦 All SA Domains");
@@ -137,24 +134,14 @@ export default function Scanner() {
   
   const SUBDOMAINS = ['www','mail','api','vpn','admin','portal'];
   
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { 
+    setMounted(true); 
+    const timer = setTimeout(() => setSplashComplete(true), 2500);
+    return () => clearTimeout(timer);
+  }, []);
+  
   useEffect(() => { const saved = localStorage.getItem('scanner_stats'); if (saved) setStats(JSON.parse(saved)); }, []);
   
-  // Lottie splash logic
-  useEffect(() => {
-    if (!mounted) return;
-    const advance = () => {
-      segmentIndex.current++;
-      if (segmentIndex.current < SPLASH_SEGMENTS.length) {
-        lottieRef.current?.playSegments(SPLASH_SEGMENTS[segmentIndex.current], true);
-      } else {
-        setTimeout(() => setSplashComplete(true), 500);
-      }
-    };
-    const timer = setInterval(advance, 2000);
-    return () => clearInterval(timer);
-  }, [mounted]);
-
   // Metrics simulation during scanning
   useEffect(() => {
     if (sniStatus === 'running' || reconStatus === 'running') {
@@ -308,26 +295,21 @@ export default function Scanner() {
     </th>
   );
 
-  // Splash screen
-if (!splashComplete) {
-  return (
-    <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
-      {mounted && (
-        <Lottie
-          lottieRef={lottieRef}
-          animationData="/animations/bruteforce_master.json"
-          loop={false}
-          autoplay={true}
-          initialSegment={SPLASH_SEGMENTS[0]}
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        />
-      )}
-      <div className="absolute bottom-8 text-cyan-400 text-xs tracking-widest">
-        BruteforceScannerR
+  // Splash screen (static, no Lottie)
+  if (!splashComplete) {
+    return (
+      <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
+        <div className="text-center">
+          <img src="/access-granted.jpg" alt="Access Granted" className="w-full h-full object-cover absolute inset-0 opacity-40" />
+          <div className="relative z-10">
+            <div className="text-cyan-400 text-xl mb-4 animate-pulse">DECRYPTING ACCESS...</div>
+            <div className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mx-auto"/>
+            <div className="mt-4 text-cyan-400/60 text-xs tracking-widest">BruteforceScannerR</div>
+          </div>
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   // Main App
   return (
@@ -361,22 +343,28 @@ if (!splashComplete) {
           <div className="max-w-screen-xl mx-auto px-4 md:px-6 py-6 space-y-5">
             
             {/* ==================== DASHBOARD TAB ==================== */}
-{tab === "dashboard" && (
-  <div className="space-y-4">
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <StatCard label="SNI Scans" value={stats.sniScans} color="cyan" icon={<FiShield/>}/>
-      <StatCard label="Recon Scans" value={stats.reconScans} color="purple" icon={<FiGlobe/>}/>
-      <StatCard label="Proxies Found" value={stats.proxiesFound} color="green" icon={<FiZap/>}/>
-      <StatCard label="Last Scan" value={stats.lastScan ? new Date(stats.lastScan).toLocaleDateString() : "—"} color="yellow" icon={<FiActivity/>}/>
-    </div>
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <button onClick={()=>setTab("sni")} className="p-4 bg-cyan-500/5 border border-cyan-500/20 rounded-xl hover:border-cyan-500/40"><FiShield className="text-cyan-400 text-xl mb-1"/><div className="font-bold text-sm">SNI Scanner</div></button>
-      <button onClick={()=>setTab("recon")} className="p-4 bg-purple-500/5 border border-purple-500/20 rounded-xl hover:border-purple-500/40"><FiGlobe className="text-purple-400 text-xl mb-1"/><div className="font-bold text-sm">Recon</div></button>
-      <button onClick={()=>setTab("proxy")} className="p-4 bg-green-500/5 border border-green-500/20 rounded-xl hover:border-green-500/40"><FiZap className="text-green-400 text-xl mb-1"/><div className="font-bold text-sm">Proxy Tester</div></button>
-      <button onClick={()=>setTab("ssl")} className="p-4 bg-red-500/5 border border-red-500/20 rounded-xl hover:border-red-500/40"><FiActivity className="text-red-400 text-xl mb-1"/><div className="font-bold text-sm">SSL Scanner</div></button>
-    </div>
-  </div>
-)}
+            {tab === "dashboard" && (
+              <div className="space-y-4">
+                <MetricsPanel aps={scanMetrics.aps} totalAttempts={scanMetrics.total} elapsed={scanMetrics.elapsed} />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className="bg-black/40 border border-cyan-500/20 rounded-2xl p-5 backdrop-blur-sm"><h3 className="text-sm font-bold text-cyan-400 mb-3">Live Attempts</h3><AttemptGraph dataPoints={graphData} /></div>
+                  <div className="bg-black/40 border border-cyan-500/20 rounded-2xl p-5 backdrop-blur-sm"><h3 className="text-sm font-bold text-cyan-400 mb-3">Terminal Log</h3><TerminalLog logs={terminalLogs} /></div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                  <StatCard label="SNI Scans" value={stats.sniScans} color="cyan" icon={<FiShield/>}/>
+                  <StatCard label="Recon Scans" value={stats.reconScans} color="purple" icon={<FiGlobe/>}/>
+                  <StatCard label="Proxies Found" value={stats.proxiesFound} color="green" icon={<FiZap/>}/>
+                  <StatCard label="Last Scan" value={stats.lastScan ? new Date(stats.lastScan).toLocaleDateString() : "—"} color="yellow" icon={<FiActivity/>}/>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <button onClick={()=>setTab("sni")} className="p-4 bg-cyan-500/5 border border-cyan-500/20 rounded-xl hover:border-cyan-500/40"><FiShield className="text-cyan-400 text-xl mb-1"/><div className="font-bold text-sm">SNI Scanner</div></button>
+                  <button onClick={()=>setTab("recon")} className="p-4 bg-purple-500/5 border border-purple-500/20 rounded-xl hover:border-purple-500/40"><FiGlobe className="text-purple-400 text-xl mb-1"/><div className="font-bold text-sm">Recon</div></button>
+                  <button onClick={()=>setTab("proxy")} className="p-4 bg-green-500/5 border border-green-500/20 rounded-xl hover:border-green-500/40"><FiZap className="text-green-400 text-xl mb-1"/><div className="font-bold text-sm">Proxy Tester</div></button>
+                  <button onClick={()=>setTab("ssl")} className="p-4 bg-red-500/5 border border-red-500/20 rounded-xl hover:border-red-500/40"><FiActivity className="text-red-400 text-xl mb-1"/><div className="font-bold text-sm">SSL Scanner</div></button>
+                </div>
+              </div>
+            )}
+
             {/* ==================== SNI TAB ==================== */}
             {tab === "sni" && (
               <>
@@ -534,4 +522,4 @@ if (!splashComplete) {
       </div>
     </>
   );
-}
+    }
