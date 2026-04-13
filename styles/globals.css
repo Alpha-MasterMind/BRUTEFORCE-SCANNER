@@ -162,4 +162,19 @@ tr:hover {
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --border: #cbd5e1;
-}
+} 
+
+/* Add to :root in globals.css */
+:root {
+  --bg-deep: #05070A;
+  --bg-panel: #0A0F18;
+  --border-dim: #1A2A3A;
+  --neon-cyan: #00f0ff;
+  --neon-green: #00ff66;
+  --neon-amber: #ffb347;
+  --text-primary: #e2e8f0;
+  --text-dim: #8899aa;
+  --font-sans: 'Inter', 'SF Pro Display', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Menlo', monospace;
+} 
+
