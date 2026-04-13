@@ -309,13 +309,21 @@ export default function Scanner() {
   );
 
   // Splash screen
-  if (!splashComplete) {
+if (!splashComplete) {
   return (
     <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
-      <div className="text-center">
-        <div className="text-cyan-400 text-xl mb-4">DECRYPTING ACCESS...</div>
-        <div className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mx-auto"/>
-        <div className="mt-4 text-cyan-400/60 text-xs tracking-widest">BruteforceScannerR</div>
+      {mounted && (
+        <Lottie
+          lottieRef={lottieRef}
+          animationData="/animations/bruteforce_master.json"
+          loop={false}
+          autoplay={true}
+          initialSegment={SPLASH_SEGMENTS[0]}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+      )}
+      <div className="absolute bottom-8 text-cyan-400 text-xs tracking-widest">
+        BruteforceScannerR
       </div>
     </div>
   );
