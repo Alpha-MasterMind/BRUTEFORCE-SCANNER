@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ===== CSS VARIABLES ===== */
 :root {
   --bg-deep: #05070A;
   --bg-panel: #0A0F18;
@@ -14,7 +13,6 @@
   --text-dim: #8899aa;
 }
 
-/* ===== CUSTOM SCROLLBAR ===== */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: #05070A; box-shadow: inset 0 0 6px #00f0ff20; }
 ::-webkit-scrollbar-thumb { background: #00f0ff60; border-radius: 8px; box-shadow: 0 0 8px #00f0ff; }
@@ -24,7 +22,6 @@
   transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
 }
 
-/* ===== ANIMATIONS ===== */
 @keyframes glitch {
   0% { transform: translate(0); }
   20% { transform: translate(-2px, 2px); }
@@ -106,7 +103,6 @@
 }
 .border-pulse { animation: border-pulse 2s infinite; }
 
-/* ===== CARD HOVER EFFECTS ===== */
 .card-hover {
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid #1A2A3A;
@@ -118,12 +114,10 @@
   border-color: #00ff66;
 }
 
-/* ===== NEON TEXT ===== */
 .neon-text {
   text-shadow: 0 0 8px currentColor;
 }
 
-/* ===== GLASSMORPHISM ===== */
 .glass-panel {
   background: rgba(5, 7, 10, 0.65);
   backdrop-filter: blur(12px);
@@ -131,7 +125,6 @@
   border: 1px solid #1A2A3A;
 }
 
-/* ===== STAT CARD GLOW ===== */
 .stat-card-glow {
   position: relative;
   overflow: hidden;
@@ -149,15 +142,10 @@
   opacity: 1;
 }
 
-/* ===== TABLE ROW HOVER ===== */
-tr {
-  transition: background-color 0.2s;
-}
 tr:hover {
   background: #00ff6608 !important;
 }
 
-/* ===== BUTTON GRADIENT ===== */
 .btn-gradient {
   background: linear-gradient(135deg, #00cc66, #00994d);
   transition: all 0.2s;
@@ -167,16 +155,6 @@ tr:hover {
   box-shadow: 0 0 20px #00ff6680;
 }
 
-/* ===== SCANLINE OVERLAY FOR TERMINAL ===== */
 .bg-scanlines {
   background: repeating-linear-gradient(0deg, rgba(0,255,102,0.02) 0px, transparent 2px, transparent 4px);
-}
-
-/* ===== LIGHT MODE OVERRIDES (unused) ===== */
-.light {
-  --bg-deep: #f8fafc;
-  --bg-panel: #e2e8f0;
-  --border-dim: #cbd5e1;
-  --text-primary: #0f172a;
-  --text-dim: #475569;
 }
