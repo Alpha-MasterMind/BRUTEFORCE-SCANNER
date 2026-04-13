@@ -1,5 +1,5 @@
 // pages/index.jsx
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import Head from 'next/head';
 import toast from 'react-hot-toast';
 import { FiCopy, FiMoon, FiSun, FiChevronDown, FiChevronUp, FiShield, FiGlobe, FiZap, FiActivity, FiVolume2, FiVolumeX } from 'react-icons/fi';
