@@ -5,6 +5,29 @@ import toast from 'react-hot-toast';
 import { FiCopy, FiMoon, FiSun, FiChevronDown, FiChevronUp, FiShield, FiGlobe, FiZap, FiActivity } from 'react-icons/fi';
 import { useTheme } from 'next-themes';
 
+// ==================== SPLASH SCREEN SEQUENCE ====================
+const SPLASH_STAGES = [
+  {
+    image: '/authorization.jpg',
+    text: 'DECRYPTING ACCESS...',
+    subtext: 'AUTHORIZATION',
+    duration: 2000
+  },
+  {
+    image: '/breaching.jpg',
+    text: 'BREACH IN-PROGRESS',
+    subtext: 'BREACHING',
+    progress: 64,
+    duration: 2000
+  },
+  {
+    image: '/access-granted.jpg',
+    text: 'ACCESS GRANTED',
+    subtext: 'Welcome, Operator',
+    duration: 2000
+  }
+];
+
 // ==================== EXPANDED ZERO-RATED DOMAINS ====================
 const MTN_DOMAINS = [ "mtn.co.za", "www.mtn.co.za", "nofunds.mtn.co.za", "onlinecms.mtn.co.za", "dev.onlinecms.mtn.co.za", "myaccount.mtn.co.za", "selfservice.mtn.co.za", "myconnect.mtn.co.za", "portal.mtn.co.za", "business.mtn.co.za", "api.mtn.co.za" ];
 const VODACOM_DOMAINS = [ "vodacom.co.za", "www.vodacom.co.za", "selfservice.vodacom.co.za", "vodapay.vodacom.co.za", "connectu.vodacom.co.za", "careers24.com", "pnet.co.za", "careerjunction.co.za", "jobmail.co.za", "indeed.com", "giraffe.co.za" ];
@@ -35,7 +58,7 @@ function StatCard({ label, value, color="cyan", icon, sub }) { const cols = { re
 function ProgressBar({ pct, color="cyan" }) { const c = color==="green"?"from-green-500 to-emerald-400":"from-cyan-500 to-blue-500"; return (<div className="w-full h-0.5 bg-cyan-500/10"><div className={`h-full bg-gradient-to-r ${c} transition-all duration-500`} style={{width:`${pct}%`}}/></div>); }
 function SkeletonRow() { return (<tr className="animate-pulse"><td className="pl-3 py-2.5"><div className="w-1.5 h-1.5 rounded-full bg-cyan-500/20"/></td><td className="px-3 py-2.5"><div className="h-3 bg-cyan-500/20 rounded w-12"/></td><td className="px-3 py-2.5"><div className="h-3 bg-cyan-500/20 rounded w-32"/></td><td className="px-3 py-2.5"><div className="h-3 bg-cyan-500/20 rounded w-20"/></td><td className="px-3 py-2.5"><div className="h-3 bg-cyan-500/20 rounded w-16"/></td><td className="px-3 py-2.5"><div className="h-3 bg-cyan-500/20 rounded w-10"/></td><td className="px-3 py-2.5"><div className="h-3 bg-cyan-500/20 rounded w-24"/></td><td className="px-3 py-2.5"><div className="h-3 bg-cyan-500/20 rounded w-10"/></td><td className="px-3 py-2.5"><div className="h-3 bg-cyan-500/20 rounded w-8"/></td><td className="px-2 py-2.5"><div className="w-3 h-3 bg-cyan-500/20 rounded"/></td></tr>); }
 
-// ==================== METRICS PANEL (SAFE) ====================
+// ==================== METRICS PANEL ====================
 function MetricsPanel({ aps, totalAttempts, elapsed }) {
   return (
     <div className="bg-black/75 border border-[#00ff66] rounded p-4 shadow-[0_0_12px_#00ff6640] col-span-12 flex justify-between">
@@ -46,7 +69,7 @@ function MetricsPanel({ aps, totalAttempts, elapsed }) {
   );
 }
 
-// ==================== TERMINAL LOG (GUARDED) ====================
+// ==================== TERMINAL LOG ====================
 function TerminalLog({ logs }) {
   const endRef = useRef(null);
   const [isClient, setIsClient] = useState(false);
@@ -61,7 +84,7 @@ function TerminalLog({ logs }) {
   );
 }
 
-// ==================== ATTEMPT GRAPH (GUARDED) ====================
+// ==================== ATTEMPT GRAPH ====================
 function AttemptGraph({ dataPoints }) {
   const canvasRef = useRef();
   const [isClient, setIsClient] = useState(false);
@@ -88,6 +111,7 @@ export default function Scanner() {
   const { theme, setTheme } = useTheme();
   const [tab, setTab] = useState("dashboard");
   const [mounted, setMounted] = useState(false);
+  const [splashStage, setSplashStage] = useState(0);
   const [splashComplete, setSplashComplete] = useState(false);
 
   const [stats, setStats] = useState({ sniScans: 0, reconScans: 0, proxiesFound: 0, lastScan: null });
@@ -134,11 +158,19 @@ export default function Scanner() {
   
   const SUBDOMAINS = ['www','mail','api','vpn','admin','portal'];
   
-  useEffect(() => { 
-    setMounted(true); 
-    const timer = setTimeout(() => setSplashComplete(true), 2500);
-    return () => clearTimeout(timer);
-  }, []);
+  useEffect(() => { setMounted(true); }, []);
+  
+  // Splash screen timer
+  useEffect(() => {
+    if (!mounted || splashComplete) return;
+    if (splashStage < SPLASH_STAGES.length) {
+      const timer = setTimeout(() => setSplashStage(prev => prev + 1), SPLASH_STAGES[splashStage].duration);
+      return () => clearTimeout(timer);
+    } else {
+      const timer = setTimeout(() => setSplashComplete(true), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [splashStage, mounted, splashComplete]);
   
   useEffect(() => { const saved = localStorage.getItem('scanner_stats'); if (saved) setStats(JSON.parse(saved)); }, []);
   
@@ -295,16 +327,39 @@ export default function Scanner() {
     </th>
   );
 
-  // Splash screen (static, no Lottie)
+  // Splash screen (sequential images)
   if (!splashComplete) {
+    const stage = SPLASH_STAGES[splashStage] || SPLASH_STAGES[SPLASH_STAGES.length - 1];
     return (
-      <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
-        <div className="text-center">
-          <img src="/access-granted.jpg" alt="Access Granted" className="w-full h-full object-cover absolute inset-0 opacity-40" />
-          <div className="relative z-10">
-            <div className="text-cyan-400 text-xl mb-4 animate-pulse">DECRYPTING ACCESS...</div>
-            <div className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mx-auto"/>
-            <div className="mt-4 text-cyan-400/60 text-xs tracking-widest">BruteforceScannerR</div>
+      <div 
+        className="min-h-screen flex items-center justify-center bg-black font-mono relative"
+        style={{
+          backgroundImage: `url('${stage.image}')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}
+      >
+        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+        <div className="relative z-10 text-center max-w-md px-6">
+          <div className="text-cyan-400 text-sm mb-4 tracking-widest animate-pulse">
+            {stage.text}
+          </div>
+          {stage.subtext && (
+            <div className="text-green-400 text-xs mb-6 whitespace-pre-line leading-relaxed">
+              {stage.subtext}
+            </div>
+          )}
+          {stage.progress !== undefined && (
+            <div className="w-full h-1.5 bg-cyan-500/20 rounded-full overflow-hidden mb-4">
+              <div 
+                className="h-full bg-gradient-to-r from-cyan-500 to-green-500 transition-all duration-300"
+                style={{ width: `${stage.progress}%` }}
+              />
+              <div className="text-right text-cyan-400 text-[10px] mt-0.5">{stage.progress}%</div>
+            </div>
+          )}
+          <div className="text-cyan-500/40 text-[10px] tracking-widest">
+            BruteforceScannerR
           </div>
         </div>
       </div>
@@ -522,4 +577,4 @@ export default function Scanner() {
       </div>
     </>
   );
-    }
+}
