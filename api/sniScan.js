@@ -1,6 +1,9 @@
+// pages/api/sniScan.js
 import tls from 'tls';
 import dns from 'dns/promises';
 import fetch from 'node-fetch';
+
+const geoCache = new Map();
 
 async function resolveDomain(hostname) {
   try {
@@ -46,7 +49,7 @@ async function httpProbe(host, port = 443) {
     const res = await fetch(url, {
       method: 'HEAD',
       timeout: 5000,
-      headers: { 'User-Agent': 'Mozilla/5.0' }
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; BruteforceScannerR/2.0)' }
     });
     const server = res.headers.get('server') || null;
     return { status: res.status, server, title: null };
@@ -56,10 +59,12 @@ async function httpProbe(host, port = 443) {
 }
 
 async function geoIP(ip) {
+  if (geoCache.has(ip)) return geoCache.get(ip);
   try {
     const res = await fetch(`http://ip-api.com/json/${ip}?fields=status,country,countryCode,region,city,org`);
     const data = await res.json();
     if (data.status === 'success') {
+      geoCache.set(ip, data);
       return {
         country: data.country,
         countryCode: data.countryCode,
@@ -78,36 +83,48 @@ export default async function handler(req, res) {
 
   const { sni_hosts, target_ip, port = 443, probe_http = true, probe_geo = true } = req.body;
 
-  if (!sni_hosts || !Array.isArray(sni_hosts)) {
-    return res.status(400).json({ error: 'Missing sni_hosts array' });
+  if (!sni_hosts || !Array.isArray(sni_hosts) || sni_hosts.length === 0) {
+    return res.status(400).json({ error: 'Missing or invalid sni_hosts array' });
   }
 
-  const results = [];
-  const targetIP = target_ip || (sni_hosts.length > 0 ? await resolveDomain(sni_hosts[0]) : null);
-
+  // Determine target IP
+  let targetIP = target_ip;
+  if (!targetIP && sni_hosts.length > 0) {
+    targetIP = await resolveDomain(sni_hosts[0]);
+  }
   if (!targetIP) {
     return res.status(400).json({ error: 'Could not determine target IP' });
   }
 
-  for (const sni of sni_hosts) {
-    const handshake = await testSNI(targetIP, port, sni);
-    const result = {
-      sni,
-      ip: targetIP,
-      port,
-      ok: handshake.ok,
-      error: handshake.error,
-      http: null,
-      geo: null,
-      timestamp: new Date().toISOString()
-    };
+  const results = [];
+  // Process SNI hosts with concurrency limit
+  const SNI_CONCURRENCY = 5;
 
-    if (handshake.ok) {
-      if (probe_http) result.http = await httpProbe(sni, port);
-      if (probe_geo) result.geo = await geoIP(targetIP);
-    }
+  for (let i = 0; i < sni_hosts.length; i += SNI_CONCURRENCY) {
+    const chunk = sni_hosts.slice(i, i + SNI_CONCURRENCY);
+    const chunkPromises = chunk.map(async (sni) => {
+      const handshake = await testSNI(targetIP, port, sni);
+      const result = {
+        sni,
+        ip: targetIP,
+        port,
+        ok: handshake.ok,
+        error: handshake.error,
+        http: null,
+        geo: null,
+        timestamp: new Date().toISOString()
+      };
 
-    results.push(result);
+      if (handshake.ok) {
+        if (probe_http) result.http = await httpProbe(sni, port);
+        if (probe_geo) result.geo = await geoIP(targetIP);
+      }
+
+      return result;
+    });
+
+    const chunkResults = await Promise.all(chunkPromises);
+    results.push(...chunkResults);
   }
 
   res.status(200).json({ tested: sni_hosts.length, results });
