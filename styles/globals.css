@@ -2,11 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ===== CUSTOM SCROLLBAR - NEON CYAN ===== */
+/* ===== CSS VARIABLES ===== */
+:root {
+  --bg-deep: #05070A;
+  --bg-panel: #0A0F18;
+  --border-dim: #1A2A3A;
+  --neon-cyan: #00f0ff;
+  --neon-green: #00ff66;
+  --neon-amber: #ffb347;
+  --text-primary: #e2e8f0;
+  --text-dim: #8899aa;
+}
+
+/* ===== CUSTOM SCROLLBAR ===== */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #0a0a0a; box-shadow: inset 0 0 6px #00ffff20; }
-::-webkit-scrollbar-thumb { background: #00ffff60; border-radius: 8px; box-shadow: 0 0 8px #00ffff; }
-::-webkit-scrollbar-thumb:hover { background: #00ffff; box-shadow: 0 0 12px #00ffff; }
+::-webkit-scrollbar-track { background: #05070A; box-shadow: inset 0 0 6px #00f0ff20; }
+::-webkit-scrollbar-thumb { background: #00f0ff60; border-radius: 8px; box-shadow: 0 0 8px #00f0ff; }
+::-webkit-scrollbar-thumb:hover { background: #00ff66; box-shadow: 0 0 12px #00ff66; }
 
 * {
   transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
@@ -97,8 +109,8 @@
 /* ===== CARD HOVER EFFECTS ===== */
 .card-hover {
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid #00ff6630;
-  box-shadow: 0 0 10px #00ff6610;
+  border: 1px solid #1A2A3A;
+  box-shadow: 0 0 10px #00ff6608;
 }
 .card-hover:hover {
   transform: translateY(-3px);
@@ -113,10 +125,10 @@
 
 /* ===== GLASSMORPHISM ===== */
 .glass-panel {
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(5, 7, 10, 0.65);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid #00ff6630;
+  border: 1px solid #1A2A3A;
 }
 
 /* ===== STAT CARD GLOW ===== */
@@ -155,26 +167,16 @@ tr:hover {
   box-shadow: 0 0 20px #00ff6680;
 }
 
-/* ===== LIGHT MODE OVERRIDES (unused but kept) ===== */
+/* ===== SCANLINE OVERLAY FOR TERMINAL ===== */
+.bg-scanlines {
+  background: repeating-linear-gradient(0deg, rgba(0,255,102,0.02) 0px, transparent 2px, transparent 4px);
+}
+
+/* ===== LIGHT MODE OVERRIDES (unused) ===== */
 .light {
-  --bg-primary: #f8fafc;
-  --bg-secondary: #e2e8f0;
+  --bg-deep: #f8fafc;
+  --bg-panel: #e2e8f0;
+  --border-dim: #cbd5e1;
   --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --border: #cbd5e1;
-} 
-
-/* Add to :root in globals.css */
-:root {
-  --bg-deep: #05070A;
-  --bg-panel: #0A0F18;
-  --border-dim: #1A2A3A;
-  --neon-cyan: #00f0ff;
-  --neon-green: #00ff66;
-  --neon-amber: #ffb347;
-  --text-primary: #e2e8f0;
-  --text-dim: #8899aa;
-  --font-sans: 'Inter', 'SF Pro Display', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', 'Menlo', monospace;
-} 
-
+  --text-dim: #475569;
+}
