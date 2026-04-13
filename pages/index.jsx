@@ -4,7 +4,8 @@ import Head from 'next/head';
 import toast from 'react-hot-toast';
 import { FiCopy, FiMoon, FiSun, FiChevronDown, FiChevronUp, FiShield, FiGlobe, FiZap, FiActivity } from 'react-icons/fi';
 import { useTheme } from 'next-themes';
-import Lottie from 'lottie-react';
+import dynamic from 'next/dynamic';
+const Lottie = dynamic(() => import('lottie-react'), { ssr: false }); 
 
 // ==================== LOTTIE SPLASH SEGMENTS ====================
 const SPLASH_SEGMENTS = [
